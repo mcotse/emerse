@@ -13,6 +13,7 @@ interface AppShellProps {
   onUploadClick?: () => void;
   onTagsClick?: () => void;
   onSharesClick?: () => void;
+  onAlbumsClick?: () => void;
   clusterMode?: ClusterMode;
   onClusterModeChange?: (mode: ClusterMode) => void;
   photos?: PhotoWithDate[];
@@ -25,6 +26,7 @@ export function AppShell({
   onUploadClick,
   onTagsClick,
   onSharesClick,
+  onAlbumsClick,
   clusterMode,
   onClusterModeChange,
   photos,
@@ -44,6 +46,7 @@ export function AppShell({
         onUploadClick={onUploadClick}
         onTagsClick={onTagsClick}
         onSharesClick={onSharesClick}
+        onAlbumsClick={onAlbumsClick}
         clusterMode={clusterMode}
         onClusterModeChange={onClusterModeChange}
         photos={photos}
@@ -62,6 +65,7 @@ interface HeaderProps {
   onUploadClick?: () => void;
   onTagsClick?: () => void;
   onSharesClick?: () => void;
+  onAlbumsClick?: () => void;
   clusterMode?: ClusterMode;
   onClusterModeChange?: (mode: ClusterMode) => void;
   photos?: PhotoWithDate[];
@@ -69,7 +73,7 @@ interface HeaderProps {
   onSearch?: (query: string) => void;
 }
 
-function Header({ onUploadClick, onTagsClick, onSharesClick, clusterMode, onClusterModeChange, photos, tags, onSearch }: HeaderProps) {
+function Header({ onUploadClick, onTagsClick, onSharesClick, onAlbumsClick, clusterMode, onClusterModeChange, photos, tags, onSearch }: HeaderProps) {
   const { data: session } = useSession();
   const [showMenu, setShowMenu] = useState(false);
   const { effectiveTheme, toggleTheme, mounted } = useDarkMode();
@@ -132,6 +136,14 @@ function Header({ onUploadClick, onTagsClick, onSharesClick, clusterMode, onClus
             aria-label="Manage tags"
           >
             <TagIcon className="h-5 w-5" />
+          </button>
+          <button
+            type="button"
+            onClick={onAlbumsClick}
+            className="rounded-full p-2 hover:bg-gray-100 dark:hover:bg-gray-900"
+            aria-label="Manage albums"
+          >
+            <AlbumIcon className="h-5 w-5" />
           </button>
           <button
             type="button"
@@ -304,6 +316,25 @@ function ShareIcon({ className }: { className?: string }) {
         strokeLinecap="round"
         strokeLinejoin="round"
         d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z"
+      />
+    </svg>
+  );
+}
+
+function AlbumIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+      className={className}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z"
       />
     </svg>
   );

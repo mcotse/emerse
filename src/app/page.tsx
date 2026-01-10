@@ -19,6 +19,7 @@ import { TagManager } from "@/components/TagManager";
 import { TagFilter } from "@/components/TagFilter";
 import { SearchResults } from "@/components/SearchResults";
 import { ShareManager } from "@/components/ShareManager";
+import AlbumManager from "@/components/AlbumManager";
 import { searchPhotos, type SearchResult } from "@/lib/search";
 
 export type ClusterMode = "month" | "day" | "location";
@@ -37,6 +38,7 @@ export default function Home() {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isTagManagerOpen, setIsTagManagerOpen] = useState(false);
   const [isShareManagerOpen, setIsShareManagerOpen] = useState(false);
+  const [isAlbumManagerOpen, setIsAlbumManagerOpen] = useState(false);
   const [clusterMode, setClusterMode] = useState<ClusterMode>("month");
   const [photos, setPhotos] = useState<PhotoWithDate[]>(INITIAL_PHOTOS);
   const [availableTags, setAvailableTags] = useState<Tag[]>(SAMPLE_TAGS);
@@ -150,6 +152,7 @@ export default function Home() {
       onUploadClick={() => setIsUploadOpen(true)}
       onTagsClick={() => setIsTagManagerOpen(true)}
       onSharesClick={() => setIsShareManagerOpen(true)}
+      onAlbumsClick={() => setIsAlbumManagerOpen(true)}
       clusterMode={clusterMode}
       onClusterModeChange={setClusterMode}
       photos={photos}
@@ -258,6 +261,11 @@ export default function Home() {
       <ShareManager
         isOpen={isShareManagerOpen}
         onClose={() => setIsShareManagerOpen(false)}
+      />
+
+      <AlbumManager
+        isOpen={isAlbumManagerOpen}
+        onClose={() => setIsAlbumManagerOpen(false)}
       />
     </AppShell>
   );
