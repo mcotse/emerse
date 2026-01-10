@@ -11,6 +11,7 @@ import {
   generateMockPhotosWithDates,
   clusterByMonth,
   clusterByDay,
+  clusterByLocation,
   filterByTags,
   SAMPLE_TAGS,
 } from "@/lib/clustering";
@@ -19,7 +20,7 @@ import { TagFilter } from "@/components/TagFilter";
 import { SearchResults } from "@/components/SearchResults";
 import { searchPhotos, type SearchResult } from "@/lib/search";
 
-export type ClusterMode = "month" | "day";
+export type ClusterMode = "month" | "day" | "location";
 
 // Initial mock photos for development - will be replaced with real data
 // Using 500 photos distributed across the last year to test clustering
@@ -116,7 +117,16 @@ export default function Home() {
 
   // Cluster photos based on selected mode
   const clusters = useMemo(() => {
-    return clusterMode === "month" ? clusterByMonth(filteredPhotos) : clusterByDay(filteredPhotos);
+    switch (clusterMode) {
+      case "month":
+        return clusterByMonth(filteredPhotos);
+      case "day":
+        return clusterByDay(filteredPhotos);
+      case "location":
+        return clusterByLocation(filteredPhotos);
+      default:
+        return clusterByMonth(filteredPhotos);
+    }
   }, [filteredPhotos, clusterMode]);
 
   // Flatten clusters for photo viewer navigation

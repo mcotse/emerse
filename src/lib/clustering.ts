@@ -200,6 +200,16 @@ const SHUTTER_SPEEDS = ["1/2000", "1/1000", "1/500", "1/250", "1/125", "1/60"];
 const ISOS = [100, 200, 400, 800, 1600, 3200];
 const FOCAL_LENGTHS = ["24mm", "35mm", "50mm", "85mm", "135mm", "200mm"];
 const TAG_COLORS = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#3b82f6", "#8b5cf6", "#ec4899"];
+const SAMPLE_LOCATIONS = [
+  { name: "New York", latitude: 40.7128, longitude: -74.006 },
+  { name: "San Francisco", latitude: 37.7749, longitude: -122.4194 },
+  { name: "Tokyo", latitude: 35.6762, longitude: 139.6503 },
+  { name: "Paris", latitude: 48.8566, longitude: 2.3522 },
+  { name: "London", latitude: 51.5074, longitude: -0.1278 },
+  { name: "Sydney", latitude: -33.8688, longitude: 151.2093 },
+  { name: "Barcelona", latitude: 41.3851, longitude: 2.1734 },
+  { name: "Amsterdam", latitude: 52.3676, longitude: 4.9041 },
+];
 const SAMPLE_TAGS: Tag[] = [
   { id: "tag-1", name: "Landscape", color: "#22c55e" },
   { id: "tag-2", name: "Portrait", color: "#3b82f6" },
@@ -233,6 +243,47 @@ export function filterByTags(
 }
 
 /**
+ * Group photos by location.
+ * Photos without location are grouped into "Unknown Location".
+ */
+export function clusterByLocation(photos: PhotoWithDate[]): PhotoCluster[] {
+  const clusters = new Map<string, PhotoWithDate[]>();
+
+  for (const photo of photos) {
+    const key = photo.location?.name || "unknown";
+
+    if (!clusters.has(key)) {
+      clusters.set(key, []);
+    }
+    clusters.get(key)!.push(photo);
+  }
+
+  // Sort clusters by photo count (most photos first), with unknown at the end
+  const sortedKeys = Array.from(clusters.keys()).sort((a, b) => {
+    if (a === "unknown") return 1;
+    if (b === "unknown") return -1;
+    return (clusters.get(b)?.length || 0) - (clusters.get(a)?.length || 0);
+  });
+
+  return sortedKeys.map((key) => {
+    const photos = clusters.get(key)!;
+    if (key === "unknown") {
+      return {
+        id: key,
+        label: "Unknown Location",
+        photos,
+      };
+    }
+
+    return {
+      id: key.toLowerCase().replace(/\s+/g, "-"),
+      label: key,
+      photos,
+    };
+  });
+}
+
+/**
  * Generate mock photos with dates and metadata for testing.
  */
 export function generateMockPhotosWithDates(count: number): PhotoWithDate[] {
@@ -247,11 +298,17 @@ export function generateMockPhotosWithDates(count: number): PhotoWithDate[] {
 
     // Generate random metadata
     const hasMetadata = Math.random() > 0.2; // 80% have metadata
+    const hasLocation = Math.random() > 0.3; // 70% have location
 
     // Randomly assign 0-3 tags to each photo
     const tagCount = Math.floor(Math.random() * 4);
     const shuffledTags = [...SAMPLE_TAGS].sort(() => Math.random() - 0.5);
     const photoTags = shuffledTags.slice(0, tagCount);
+
+    // Randomly assign a location
+    const location = hasLocation
+      ? SAMPLE_LOCATIONS[Math.floor(Math.random() * SAMPLE_LOCATIONS.length)]
+      : undefined;
 
     photos.push({
       id: `photo-${i}`,
@@ -262,6 +319,7 @@ export function generateMockPhotosWithDates(count: number): PhotoWithDate[] {
       blurDataURL: generateBlurPlaceholder(i),
       takenAt,
       tags: photoTags.length > 0 ? photoTags : undefined,
+      location,
       ...(hasMetadata && {
         camera: CAMERAS[Math.floor(Math.random() * CAMERAS.length)],
         lens: LENSES[Math.floor(Math.random() * LENSES.length)],

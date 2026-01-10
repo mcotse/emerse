@@ -78,7 +78,7 @@ function Header({ onUploadClick, onTagsClick, clusterMode, onClusterModeChange, 
               <button
                 type="button"
                 onClick={() => onClusterModeChange("month")}
-                className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
+                className={`rounded-md px-2 py-1 text-xs font-medium transition-colors ${
                   clusterMode === "month"
                     ? "bg-white text-black shadow-sm dark:bg-gray-700 dark:text-white"
                     : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
@@ -89,13 +89,24 @@ function Header({ onUploadClick, onTagsClick, clusterMode, onClusterModeChange, 
               <button
                 type="button"
                 onClick={() => onClusterModeChange("day")}
-                className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
+                className={`rounded-md px-2 py-1 text-xs font-medium transition-colors ${
                   clusterMode === "day"
                     ? "bg-white text-black shadow-sm dark:bg-gray-700 dark:text-white"
                     : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                 }`}
               >
                 Day
+              </button>
+              <button
+                type="button"
+                onClick={() => onClusterModeChange("location")}
+                className={`rounded-md px-2 py-1 text-xs font-medium transition-colors ${
+                  clusterMode === "location"
+                    ? "bg-white text-black shadow-sm dark:bg-gray-700 dark:text-white"
+                    : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                }`}
+              >
+                Location
               </button>
             </div>
           )}

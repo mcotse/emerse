@@ -726,8 +726,32 @@
 
 ---
 
+## 2026-01-10: Task 3.5 - Location-based Clustering
+
+**Status:** Complete
+
+### What was done:
+- Added clusterByLocation function to clustering library
+- Added sample locations (New York, San Francisco, Tokyo, Paris, etc.)
+- Updated mock data to include random locations on 70% of photos
+- Added "Location" option to cluster mode switcher
+- Photos grouped by city name with count
+
+### Location Clustering Features:
+- Groups photos by location name
+- Unknown location photos grouped separately at end
+- Sorted by photo count (most photos first)
+- Seamless switching between Month/Day/Location modes
+- Location shown in metadata panel
+
+### Files modified:
+- src/lib/clustering.ts - Added clusterByLocation, SAMPLE_LOCATIONS, location generation
+- src/components/AppShell.tsx - Added Location button to mode switcher
+- src/app/page.tsx - Updated ClusterMode type and clustering logic
+
+---
+
 ### Remaining Work
 - [ ] 2.4 Server-side multi-resolution generation
-- [ ] 3.5 Location-based clustering
 - [ ] 7.3 Share link management
 - [ ] Phase 6: Remaining polish
