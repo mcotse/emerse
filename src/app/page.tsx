@@ -1,11 +1,36 @@
 import { AppShell } from "@/components/AppShell";
+import { PhotoGrid, Photo } from "@/components/PhotoGrid";
+
+// Mock photos for development - will be replaced with real data
+const MOCK_PHOTOS: Photo[] = Array.from({ length: 24 }).map((_, i) => ({
+  id: `photo-${i}`,
+  thumbnailUrl: `https://picsum.photos/seed/${i}/400/400`,
+  width: 400,
+  height: 400,
+  alt: `Photo ${i + 1}`,
+}));
 
 export default function Home() {
+  // TODO: Replace with real photo data from database
+  const photos = MOCK_PHOTOS;
+  const hasPhotos = photos.length > 0;
+
   return (
     <AppShell>
-      <div className="p-4">
-        <EmptyState />
-      </div>
+      {hasPhotos ? (
+        <PhotoGrid
+          photos={photos}
+          columns={3}
+          onPhotoClick={(photo) => {
+            // TODO: Open photo viewer
+            console.log("Clicked photo:", photo.id);
+          }}
+        />
+      ) : (
+        <div className="p-4">
+          <EmptyState />
+        </div>
+      )}
     </AppShell>
   );
 }

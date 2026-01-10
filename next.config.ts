@@ -11,6 +11,14 @@ const nextConfig: NextConfig = {
   // Use webpack in development to support Serwist
   // Turbopack doesn't yet fully support all webpack plugins
   turbopack: {},
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "picsum.photos",
+      },
+    ],
+  },
 };
 
 export default withSerwist(nextConfig);
