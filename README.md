@@ -11,6 +11,17 @@ A Progressive Web App (PWA) for personal photo portfolio management. Upload, org
 - **PWA** - Installable, offline support, native-like experience
 - **Selection Mode** - Multi-select photos for batch operations
 
+## Screenshots
+
+### Desktop Grid View
+![Grid View](/screenshots/grid-view.png)
+
+### Photo Viewer
+![Photo Viewer](/screenshots/photo-viewer.png)
+
+### Mobile View
+![Mobile View](/screenshots/mobile-view.png)
+
 ## Tech Stack
 
 - **Framework:** Next.js 16 with React 19
