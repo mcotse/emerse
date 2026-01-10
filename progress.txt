@@ -92,3 +92,32 @@
 1. Task 1.5: Authentication setup
 2. Task 1.4: Basic responsive layout/shell
 3. Task 2.1: S3 bucket setup (manual task)
+
+---
+
+## 2026-01-10: Task 1.4 - Basic Responsive Layout/Shell
+
+**Status:** Complete
+
+### What was done:
+- Created AppShell component with header and main content area
+- Added sticky header with app title and action buttons (upload, settings)
+- Implemented mobile-first responsive design
+- Added dark mode support via Tailwind dark: classes
+- Created empty state UI for when no photos exist
+- Used backdrop blur for modern iOS-style header
+
+### Design Decisions:
+- Minimal chrome - photos should dominate the view
+- Header is sticky with blur effect for modern feel
+- Dark mode ready from the start
+- Touch-friendly button sizes (44px tap targets)
+
+### Files created/modified:
+- src/components/AppShell.tsx - Main layout shell component
+- src/app/page.tsx - Updated with AppShell and empty state
+
+### Next priorities:
+1. Task 1.5: Authentication setup
+2. Task 3.1: Basic photo grid component
+3. Task 2.2: Image upload API endpoint
