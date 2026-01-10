@@ -1,8 +1,22 @@
 import { Photo } from "@/components/PhotoGrid";
 
-export interface PhotoWithDate extends Photo {
+export interface PhotoMetadata {
   takenAt?: Date;
+  camera?: string;
+  lens?: string;
+  aperture?: string;
+  shutterSpeed?: string;
+  iso?: number;
+  focalLength?: string;
+  location?: {
+    latitude: number;
+    longitude: number;
+    name?: string;
+  };
+  fileSize?: number;
 }
+
+export interface PhotoWithDate extends Photo, PhotoMetadata {}
 
 export interface PhotoCluster {
   id: string;
@@ -134,8 +148,28 @@ export function clusterByDay(photos: PhotoWithDate[]): PhotoCluster[] {
   });
 }
 
+// Mock camera/lens data for generating realistic metadata
+const CAMERAS = [
+  "Canon EOS R5",
+  "Sony A7 IV",
+  "Nikon Z6 II",
+  "Fujifilm X-T5",
+  "iPhone 15 Pro",
+];
+const LENSES = [
+  "24-70mm f/2.8",
+  "70-200mm f/2.8",
+  "50mm f/1.4",
+  "35mm f/1.8",
+  "85mm f/1.2",
+];
+const APERTURES = ["f/1.4", "f/1.8", "f/2.8", "f/4", "f/5.6", "f/8", "f/11"];
+const SHUTTER_SPEEDS = ["1/2000", "1/1000", "1/500", "1/250", "1/125", "1/60"];
+const ISOS = [100, 200, 400, 800, 1600, 3200];
+const FOCAL_LENGTHS = ["24mm", "35mm", "50mm", "85mm", "135mm", "200mm"];
+
 /**
- * Generate mock photos with dates for testing clustering.
+ * Generate mock photos with dates and metadata for testing.
  */
 export function generateMockPhotosWithDates(count: number): PhotoWithDate[] {
   const photos: PhotoWithDate[] = [];
@@ -147,13 +181,25 @@ export function generateMockPhotosWithDates(count: number): PhotoWithDate[] {
     const takenAt = new Date(now);
     takenAt.setDate(takenAt.getDate() - daysAgo);
 
+    // Generate random metadata
+    const hasMetadata = Math.random() > 0.2; // 80% have metadata
+
     photos.push({
       id: `photo-${i}`,
       thumbnailUrl: `https://picsum.photos/seed/${i}/400/400`,
-      width: 400,
-      height: 400,
+      width: 3000 + Math.floor(Math.random() * 3000),
+      height: 2000 + Math.floor(Math.random() * 2000),
       alt: `Photo ${i + 1}`,
       takenAt,
+      ...(hasMetadata && {
+        camera: CAMERAS[Math.floor(Math.random() * CAMERAS.length)],
+        lens: LENSES[Math.floor(Math.random() * LENSES.length)],
+        aperture: APERTURES[Math.floor(Math.random() * APERTURES.length)],
+        shutterSpeed: SHUTTER_SPEEDS[Math.floor(Math.random() * SHUTTER_SPEEDS.length)],
+        iso: ISOS[Math.floor(Math.random() * ISOS.length)],
+        focalLength: FOCAL_LENGTHS[Math.floor(Math.random() * FOCAL_LENGTHS.length)],
+        fileSize: Math.floor(Math.random() * 20000000) + 1000000, // 1-21 MB
+      }),
     });
   }
 

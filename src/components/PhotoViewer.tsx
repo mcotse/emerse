@@ -3,9 +3,12 @@
 import Image from "next/image";
 import { useCallback, useEffect, useState, useRef } from "react";
 import type { Photo } from "./PhotoGrid";
+import type { PhotoMetadata } from "@/lib/clustering";
+
+type PhotoWithMetadata = Photo & Partial<PhotoMetadata>;
 
 interface PhotoViewerProps {
-  photos: Photo[];
+  photos: PhotoWithMetadata[];
   initialIndex: number;
   onClose: () => void;
 }
@@ -26,6 +29,7 @@ export function PhotoViewer({
   const [zoom, setZoom] = useState<ZoomState>({ scale: 1, translateX: 0, translateY: 0 });
   const [lastTap, setLastTap] = useState<number>(0);
   const [pinchStart, setPinchStart] = useState<{ distance: number; scale: number } | null>(null);
+  const [showInfo, setShowInfo] = useState(false);
   const imageRef = useRef<HTMLDivElement>(null);
 
   const currentPhoto = photos[currentIndex];
@@ -177,15 +181,27 @@ export function PhotoViewer({
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
-      {/* Close button */}
-      <button
-        type="button"
-        onClick={onClose}
-        className="absolute right-4 top-4 z-10 rounded-full bg-black/50 p-2 text-white hover:bg-black/70"
-        aria-label="Close"
-      >
-        <CloseIcon className="h-6 w-6" />
-      </button>
+      {/* Header buttons */}
+      <div className="absolute right-4 top-4 z-10 flex gap-2">
+        <button
+          type="button"
+          onClick={() => setShowInfo(!showInfo)}
+          className={`rounded-full p-2 text-white transition-colors ${
+            showInfo ? "bg-white/30" : "bg-black/50 hover:bg-black/70"
+          }`}
+          aria-label="Photo info"
+        >
+          <InfoIcon className="h-6 w-6" />
+        </button>
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-full bg-black/50 p-2 text-white hover:bg-black/70"
+          aria-label="Close"
+        >
+          <CloseIcon className="h-6 w-6" />
+        </button>
+      </div>
 
       {/* Navigation buttons - hide when zoomed */}
       {hasPrev && !isZoomed && (
@@ -241,6 +257,9 @@ export function PhotoViewer({
           {Math.round(zoom.scale * 100)}%
         </div>
       )}
+
+      {/* Metadata panel */}
+      <MetadataPanel photo={currentPhoto} isOpen={showInfo} onClose={() => setShowInfo(false)} />
     </div>
   );
 }
@@ -299,5 +318,160 @@ function ChevronRightIcon({ className }: { className?: string }) {
         d="m8.25 4.5 7.5 7.5-7.5 7.5"
       />
     </svg>
+  );
+}
+
+function InfoIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={2}
+      stroke="currentColor"
+      className={className}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
+      />
+    </svg>
+  );
+}
+
+interface MetadataPanelProps {
+  photo: PhotoWithMetadata;
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+function MetadataPanel({ photo, isOpen, onClose }: MetadataPanelProps) {
+  if (!isOpen) return null;
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  };
+
+  return (
+    <div
+      className="absolute bottom-0 right-0 top-0 w-80 overflow-y-auto bg-black/90 p-4 backdrop-blur-lg"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-white">Details</h2>
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-full p-1 text-white hover:bg-white/10"
+          aria-label="Close panel"
+        >
+          <CloseIcon className="h-5 w-5" />
+        </button>
+      </div>
+
+      <div className="space-y-4">
+        {/* Date taken */}
+        {photo.takenAt && (
+          <div>
+            <h3 className="text-xs font-medium uppercase tracking-wider text-gray-400">
+              Date Taken
+            </h3>
+            <p className="mt-1 text-sm text-white">{formatDate(photo.takenAt)}</p>
+          </div>
+        )}
+
+        {/* Dimensions */}
+        <div>
+          <h3 className="text-xs font-medium uppercase tracking-wider text-gray-400">
+            Dimensions
+          </h3>
+          <p className="mt-1 text-sm text-white">
+            {photo.width} × {photo.height}
+          </p>
+        </div>
+
+        {/* File size */}
+        {photo.fileSize && (
+          <div>
+            <h3 className="text-xs font-medium uppercase tracking-wider text-gray-400">
+              File Size
+            </h3>
+            <p className="mt-1 text-sm text-white">{formatFileSize(photo.fileSize)}</p>
+          </div>
+        )}
+
+        {/* Camera info */}
+        {photo.camera && (
+          <div>
+            <h3 className="text-xs font-medium uppercase tracking-wider text-gray-400">
+              Camera
+            </h3>
+            <p className="mt-1 text-sm text-white">{photo.camera}</p>
+            {photo.lens && <p className="text-sm text-gray-400">{photo.lens}</p>}
+          </div>
+        )}
+
+        {/* Camera settings */}
+        {(photo.aperture || photo.shutterSpeed || photo.iso || photo.focalLength) && (
+          <div>
+            <h3 className="text-xs font-medium uppercase tracking-wider text-gray-400">
+              Settings
+            </h3>
+            <div className="mt-1 grid grid-cols-2 gap-2 text-sm">
+              {photo.focalLength && (
+                <div>
+                  <span className="text-gray-400">Focal Length</span>
+                  <p className="text-white">{photo.focalLength}</p>
+                </div>
+              )}
+              {photo.aperture && (
+                <div>
+                  <span className="text-gray-400">Aperture</span>
+                  <p className="text-white">{photo.aperture}</p>
+                </div>
+              )}
+              {photo.shutterSpeed && (
+                <div>
+                  <span className="text-gray-400">Shutter</span>
+                  <p className="text-white">{photo.shutterSpeed}</p>
+                </div>
+              )}
+              {photo.iso && (
+                <div>
+                  <span className="text-gray-400">ISO</span>
+                  <p className="text-white">{photo.iso}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Location */}
+        {photo.location && (
+          <div>
+            <h3 className="text-xs font-medium uppercase tracking-wider text-gray-400">
+              Location
+            </h3>
+            <p className="mt-1 text-sm text-white">
+              {photo.location.name || `${photo.location.latitude}, ${photo.location.longitude}`}
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
