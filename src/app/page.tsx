@@ -1,21 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { AppShell } from "@/components/AppShell";
-import { VirtualizedPhotoGrid, Photo } from "@/components/PhotoGrid";
+import { ClusteredPhotoGrid } from "@/components/PhotoGrid";
 import { PhotoViewer } from "@/components/PhotoViewer";
 import { UploadModal } from "@/components/UploadModal";
 import { usePinchZoom, zoomToColumns } from "@/hooks/usePinchZoom";
+import { generateMockPhotosWithDates, clusterByMonth } from "@/lib/clustering";
 
-// Mock photos for development - will be replaced with real data
-// Using 500 photos to test virtualization performance
-const MOCK_PHOTOS: Photo[] = Array.from({ length: 500 }).map((_, i) => ({
-  id: `photo-${i}`,
-  thumbnailUrl: `https://picsum.photos/seed/${i}/400/400`,
-  width: 400,
-  height: 400,
-  alt: `Photo ${i + 1}`,
-}));
+// Mock photos with dates for development - will be replaced with real data
+// Using 500 photos distributed across the last year to test clustering
+const MOCK_PHOTOS = generateMockPhotosWithDates(500);
 
 const COLUMN_OPTIONS = [2, 3, 4, 6, 8];
 
@@ -38,6 +33,15 @@ export default function Home() {
   const photos = MOCK_PHOTOS;
   const hasPhotos = photos.length > 0;
 
+  // Cluster photos by month
+  const clusters = useMemo(() => clusterByMonth(photos), [photos]);
+
+  // Flatten clusters for photo viewer navigation
+  const allPhotos = useMemo(
+    () => clusters.flatMap((c) => c.photos),
+    [clusters]
+  );
+
   function openViewer(index: number) {
     setViewerState({ isOpen: true, index });
   }
@@ -51,8 +55,8 @@ export default function Home() {
       <div ref={containerRef} className="min-h-full">
         {hasPhotos ? (
           <>
-            <VirtualizedPhotoGrid
-              photos={photos}
+            <ClusteredPhotoGrid
+              clusters={clusters}
               columns={columns}
               onPhotoClick={(_, index) => openViewer(index)}
             />
@@ -71,7 +75,7 @@ export default function Home() {
 
       {viewerState.isOpen && (
         <PhotoViewer
-          photos={photos}
+          photos={allPhotos}
           initialIndex={viewerState.index}
           onClose={closeViewer}
         />

@@ -1,8 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useMemo } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { PhotoCluster, PhotoWithDate } from "@/lib/clustering";
 
 export interface Photo {
   id: string;
@@ -205,6 +206,194 @@ export function VirtualizedPhotoGrid({
           );
         })}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Clustered photo grid with section headers.
+ * Groups photos by date with virtualized scrolling.
+ */
+
+type ClusterRowItem =
+  | { type: "header"; cluster: PhotoCluster }
+  | { type: "photos"; photos: PhotoWithDate[]; clusterIndex: number; rowInCluster: number };
+
+interface ClusteredPhotoGridProps {
+  clusters: PhotoCluster[];
+  columns?: number;
+  gap?: number;
+  onPhotoClick?: (photo: PhotoWithDate, globalIndex: number) => void;
+}
+
+export function ClusteredPhotoGrid({
+  clusters,
+  columns = 3,
+  gap = 2,
+  onPhotoClick,
+}: ClusteredPhotoGridProps) {
+  const parentRef = useRef<HTMLDivElement>(null);
+
+  // Build flat list of rows (headers + photo rows)
+  const rows = useMemo(() => {
+    const items: ClusterRowItem[] = [];
+
+    for (let clusterIndex = 0; clusterIndex < clusters.length; clusterIndex++) {
+      const cluster = clusters[clusterIndex];
+
+      // Add header row
+      items.push({ type: "header", cluster });
+
+      // Add photo rows
+      const rowCount = Math.ceil(cluster.photos.length / columns);
+      for (let row = 0; row < rowCount; row++) {
+        const startIdx = row * columns;
+        const rowPhotos = cluster.photos.slice(startIdx, startIdx + columns);
+        items.push({
+          type: "photos",
+          photos: rowPhotos,
+          clusterIndex,
+          rowInCluster: row,
+        });
+      }
+    }
+
+    return items;
+  }, [clusters, columns]);
+
+  // Calculate row heights
+  const getRowHeight = useCallback(
+    (index: number) => {
+      const row = rows[index];
+      if (row.type === "header") {
+        return 56; // Header height
+      }
+      if (typeof window === "undefined") return 120;
+      const containerWidth = parentRef.current?.clientWidth ?? window.innerWidth;
+      const cellWidth = (containerWidth - gap * (columns - 1)) / columns;
+      return cellWidth + gap;
+    },
+    [rows, columns, gap]
+  );
+
+  const rowVirtualizer = useVirtualizer({
+    count: rows.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: getRowHeight,
+    overscan: 5,
+  });
+
+  // Calculate global photo index for a given position
+  const getGlobalPhotoIndex = useCallback(
+    (clusterIndex: number, photoIndexInCluster: number) => {
+      let index = 0;
+      for (let i = 0; i < clusterIndex; i++) {
+        index += clusters[i].photos.length;
+      }
+      return index + photoIndexInCluster;
+    },
+    [clusters]
+  );
+
+  if (clusters.length === 0) {
+    return null;
+  }
+
+  return (
+    <div
+      ref={parentRef}
+      className="h-[calc(100vh-3.5rem)] overflow-auto"
+      style={{ contain: "strict" }}
+    >
+      <div
+        style={{
+          height: `${rowVirtualizer.getTotalSize()}px`,
+          width: "100%",
+          position: "relative",
+        }}
+      >
+        {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+          const row = rows[virtualRow.index];
+
+          if (row.type === "header") {
+            return (
+              <div
+                key={virtualRow.key}
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  height: `${virtualRow.size}px`,
+                  transform: `translateY(${virtualRow.start}px)`,
+                }}
+              >
+                <ClusterHeader cluster={row.cluster} />
+              </div>
+            );
+          }
+
+          return (
+            <div
+              key={virtualRow.key}
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: `${virtualRow.size}px`,
+                transform: `translateY(${virtualRow.start}px)`,
+              }}
+            >
+              <div
+                className="grid h-full"
+                style={{
+                  gridTemplateColumns: `repeat(${columns}, 1fr)`,
+                  gap: `${gap}px`,
+                }}
+              >
+                {row.photos.map((photo, cellIndex) => {
+                  const photoIndexInCluster = row.rowInCluster * columns + cellIndex;
+                  const globalIndex = getGlobalPhotoIndex(row.clusterIndex, photoIndexInCluster);
+                  return (
+                    <PhotoGridItem
+                      key={photo.id}
+                      photo={photo}
+                      onClick={() => onPhotoClick?.(photo, globalIndex)}
+                    />
+                  );
+                })}
+                {row.photos.length < columns &&
+                  Array.from({ length: columns - row.photos.length }).map((_, i) => (
+                    <div key={`empty-${i}`} className="aspect-square" />
+                  ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+interface ClusterHeaderProps {
+  cluster: PhotoCluster;
+}
+
+function ClusterHeader({ cluster }: ClusterHeaderProps) {
+  return (
+    <div className="sticky top-0 z-10 flex h-14 items-center bg-white/90 px-4 backdrop-blur-sm dark:bg-black/90">
+      <div>
+        <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
+          {cluster.label}
+        </h2>
+        {cluster.sublabel && (
+          <p className="text-xs text-gray-500 dark:text-gray-400">{cluster.sublabel}</p>
+        )}
+      </div>
+      <span className="ml-auto text-xs text-gray-400">
+        {cluster.photos.length} photo{cluster.photos.length !== 1 ? "s" : ""}
+      </span>
     </div>
   );
 }
