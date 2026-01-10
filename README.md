@@ -14,13 +14,13 @@ A Progressive Web App (PWA) for personal photo portfolio management. Upload, org
 ## Screenshots
 
 ### Desktop Grid View
-![Grid View](/screenshots/grid-view.png)
+![Grid View](./public/screenshots/grid-view.png)
 
 ### Photo Viewer
-![Photo Viewer](/screenshots/photo-viewer.png)
+![Photo Viewer](./public/screenshots/photo-viewer.png)
 
 ### Mobile View
-![Mobile View](/screenshots/mobile-view.png)
+![Mobile View](./public/screenshots/mobile-view.png)
 
 ## Tech Stack
 
