@@ -1,13 +1,19 @@
 "use client";
 
 import Image from "next/image";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import type { Photo } from "./PhotoGrid";
 
 interface PhotoViewerProps {
   photos: Photo[];
   initialIndex: number;
   onClose: () => void;
+}
+
+interface ZoomState {
+  scale: number;
+  translateX: number;
+  translateY: number;
 }
 
 export function PhotoViewer({
@@ -17,18 +23,39 @@ export function PhotoViewer({
 }: PhotoViewerProps) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [zoom, setZoom] = useState<ZoomState>({ scale: 1, translateX: 0, translateY: 0 });
+  const [lastTap, setLastTap] = useState<number>(0);
+  const [pinchStart, setPinchStart] = useState<{ distance: number; scale: number } | null>(null);
+  const imageRef = useRef<HTMLDivElement>(null);
 
   const currentPhoto = photos[currentIndex];
   const hasNext = currentIndex < photos.length - 1;
   const hasPrev = currentIndex > 0;
 
+  const resetZoom = useCallback(() => {
+    setZoom({ scale: 1, translateX: 0, translateY: 0 });
+  }, []);
+
   const goNext = useCallback(() => {
-    if (hasNext) setCurrentIndex((i) => i + 1);
-  }, [hasNext]);
+    if (hasNext) {
+      setCurrentIndex((i) => i + 1);
+      resetZoom();
+    }
+  }, [hasNext, resetZoom]);
 
   const goPrev = useCallback(() => {
-    if (hasPrev) setCurrentIndex((i) => i - 1);
-  }, [hasPrev]);
+    if (hasPrev) {
+      setCurrentIndex((i) => i - 1);
+      resetZoom();
+    }
+  }, [hasPrev, resetZoom]);
+
+  // Calculate distance between two touch points
+  const getTouchDistance = (touches: React.TouchList) => {
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
 
   // Keyboard navigation
   useEffect(() => {
@@ -50,13 +77,75 @@ export function PhotoViewer({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onClose, goNext, goPrev]);
 
-  // Touch handlers for swipe
+  // Touch handlers for swipe, pinch-to-zoom, and double-tap
   function handleTouchStart(e: React.TouchEvent) {
-    setTouchStart(e.touches[0].clientX);
+    // Handle pinch start (2 fingers)
+    if (e.touches.length === 2) {
+      const distance = getTouchDistance(e.touches);
+      setPinchStart({ distance, scale: zoom.scale });
+      setTouchStart(null);
+      return;
+    }
+
+    // Handle single touch (for swipe or double-tap)
+    if (e.touches.length === 1) {
+      const now = Date.now();
+      const DOUBLE_TAP_DELAY = 300;
+
+      // Check for double tap
+      if (now - lastTap < DOUBLE_TAP_DELAY) {
+        // Double tap detected - toggle zoom
+        if (zoom.scale > 1) {
+          resetZoom();
+        } else {
+          // Zoom to 2x centered on tap point
+          const touch = e.touches[0];
+          const rect = imageRef.current?.getBoundingClientRect();
+          if (rect) {
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            const offsetX = (centerX - touch.clientX) * 1; // scale from 1 to 2
+            const offsetY = (centerY - touch.clientY) * 1;
+            setZoom({ scale: 2, translateX: offsetX, translateY: offsetY });
+          } else {
+            setZoom({ scale: 2, translateX: 0, translateY: 0 });
+          }
+        }
+        setLastTap(0);
+        return;
+      }
+
+      setLastTap(now);
+      setTouchStart(e.touches[0].clientX);
+    }
+  }
+
+  function handleTouchMove(e: React.TouchEvent) {
+    // Handle pinch zoom
+    if (e.touches.length === 2 && pinchStart) {
+      const distance = getTouchDistance(e.touches);
+      const scaleFactor = distance / pinchStart.distance;
+      const newScale = Math.min(Math.max(pinchStart.scale * scaleFactor, 1), 4);
+      setZoom((prev) => ({ ...prev, scale: newScale }));
+    }
   }
 
   function handleTouchEnd(e: React.TouchEvent) {
-    if (touchStart === null) return;
+    // Clear pinch state
+    if (pinchStart) {
+      setPinchStart(null);
+      // Reset to 1x if zoomed out below threshold
+      if (zoom.scale < 1.1) {
+        resetZoom();
+      }
+      return;
+    }
+
+    // Handle swipe (only when not zoomed)
+    if (touchStart === null || zoom.scale > 1) {
+      setTouchStart(null);
+      return;
+    }
 
     const touchEnd = e.changedTouches[0].clientX;
     const diff = touchStart - touchEnd;
@@ -79,10 +168,13 @@ export function PhotoViewer({
     };
   }, []);
 
+  const isZoomed = zoom.scale > 1;
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black"
       onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
       {/* Close button */}
@@ -95,8 +187,8 @@ export function PhotoViewer({
         <CloseIcon className="h-6 w-6" />
       </button>
 
-      {/* Navigation buttons */}
-      {hasPrev && (
+      {/* Navigation buttons - hide when zoomed */}
+      {hasPrev && !isZoomed && (
         <button
           type="button"
           onClick={goPrev}
@@ -106,7 +198,7 @@ export function PhotoViewer({
           <ChevronLeftIcon className="h-6 w-6" />
         </button>
       )}
-      {hasNext && (
+      {hasNext && !isZoomed && (
         <button
           type="button"
           onClick={goNext}
@@ -117,8 +209,14 @@ export function PhotoViewer({
         </button>
       )}
 
-      {/* Photo */}
-      <div className="relative h-full w-full">
+      {/* Photo with zoom */}
+      <div
+        ref={imageRef}
+        className="relative h-full w-full transition-transform duration-100"
+        style={{
+          transform: `scale(${zoom.scale}) translate(${zoom.translateX / zoom.scale}px, ${zoom.translateY / zoom.scale}px)`,
+        }}
+      >
         <Image
           src={currentPhoto.thumbnailUrl.replace("/400/400", "/1600/1600")}
           alt={currentPhoto.alt ?? "Photo"}
@@ -126,13 +224,23 @@ export function PhotoViewer({
           className="object-contain"
           sizes="100vw"
           priority
+          draggable={false}
         />
       </div>
 
-      {/* Counter */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-black/50 px-3 py-1 text-sm text-white">
-        {currentIndex + 1} / {photos.length}
-      </div>
+      {/* Counter - hide when zoomed */}
+      {!isZoomed && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-black/50 px-3 py-1 text-sm text-white">
+          {currentIndex + 1} / {photos.length}
+        </div>
+      )}
+
+      {/* Zoom indicator */}
+      {isZoomed && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-black/50 px-3 py-1 text-sm text-white">
+          {Math.round(zoom.scale * 100)}%
+        </div>
+      )}
     </div>
   );
 }

@@ -392,7 +392,31 @@
 
 ---
 
-## Summary: 13 Iterations Completed
+## 2026-01-10: Task 5.3 - Pinch-to-zoom in Photo Viewer
+
+**Status:** Complete
+
+### What was done:
+- Added pinch-to-zoom gesture support in photo viewer
+- Added double-tap to toggle 2x zoom
+- Zoom indicator shows current scale percentage
+- Navigation buttons hidden while zoomed
+- Swipe navigation disabled while zoomed
+- Zoom resets when changing photos
+
+### Zoom Features:
+- Pinch gesture scales from 1x to 4x
+- Double-tap toggles between 1x and 2x
+- Double-tap zooms centered on tap location
+- Smooth CSS transform transitions
+- UI elements adapt to zoom state
+
+### Files modified:
+- src/components/PhotoViewer.tsx - Added zoom state and gesture handling
+
+---
+
+## Summary: 14 Iterations Completed
 
 ### Foundation (Phase 1)
 - [x] 1.1 Project setup (Next.js, TypeScript, Tailwind)
@@ -413,9 +437,10 @@
 - [x] 3.4 Cluster headers
 - [x] 4.2 Pinch-to-zoom gesture detection
 - [x] 5.1 Full-screen photo viewer modal
+- [x] 5.3 Pinch-to-zoom within photo
 
 ### Remaining Work
 - [ ] 2.4 Server-side multi-resolution generation
 - [ ] 3.5-3.6 Location clustering & mode switcher
-- [ ] 5.2-5.5 Photo viewer enhancements
+- [ ] 5.4-5.5 Photo metadata panel & share
 - [ ] Phase 6-7: Polish and public sharing
