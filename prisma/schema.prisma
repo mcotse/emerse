@@ -1,0 +1,142 @@
+// Emerse Photo Explorer - Database Schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// User account for authentication (private by default)
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  photos Photo[]
+  tags   Tag[]
+  shares Share[]
+}
+
+// Photo with multi-resolution storage and metadata
+model Photo {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // S3 keys for different resolutions
+  s3KeyOriginal  String
+  s3KeyLarge     String? // 1600px
+  s3KeyMedium    String? // 800px
+  s3KeySmall     String? // 400px
+  s3KeyThumbnail String? // 150px
+
+  // File metadata
+  filename    String
+  mimeType    String
+  fileSize    Int      // bytes
+  width       Int?
+  height      Int?
+
+  // EXIF metadata for clustering
+  takenAt     DateTime? // Date photo was taken
+  latitude    Float?
+  longitude   Float?
+  city        String?
+  country     String?
+  cameraMake  String?
+  cameraModel String?
+  focalLength Float?
+  aperture    Float?
+  iso         Int?
+  shutterSpeed String?
+
+  // Processing status
+  processingStatus ProcessingStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tags      PhotoTag[]
+  shares    SharePhoto[]
+
+  @@index([userId])
+  @@index([takenAt])
+  @@index([latitude, longitude])
+}
+
+enum ProcessingStatus {
+  PENDING
+  PROCESSING
+  COMPLETE
+  FAILED
+}
+
+// User-defined tags for organization
+model Tag {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name  String
+  color String? // Optional color for UI
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  photos PhotoTag[]
+
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+// Many-to-many: Photos <-> Tags
+model PhotoTag {
+  photoId String
+  photo   Photo  @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  tagId   String
+  tag     Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@id([photoId, tagId])
+}
+
+// Public share links for galleries
+model Share {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Share configuration
+  slug        String    @unique // URL-friendly identifier
+  title       String?
+  description String?
+  isActive    Boolean   @default(true)
+  expiresAt   DateTime?
+  viewCount   Int       @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  photos SharePhoto[]
+
+  @@index([userId])
+  @@index([slug])
+}
+
+// Many-to-many: Shares <-> Photos
+model SharePhoto {
+  shareId String
+  share   Share  @relation(fields: [shareId], references: [id], onDelete: Cascade)
+  photoId String
+  photo   Photo  @relation(fields: [photoId], references: [id], onDelete: Cascade)
+
+  sortOrder Int @default(0)
+
+  @@id([shareId, photoId])
+}

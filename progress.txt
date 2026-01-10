@@ -28,3 +28,33 @@
 1. Task 1.2: PWA configuration (manifest, service worker)
 2. Task 1.6: Database schema design
 3. Task 1.5: Authentication setup
+
+---
+
+## 2026-01-10: Task 1.6 - Database Schema Design
+
+**Status:** Complete
+
+### What was done:
+- Installed Prisma ORM (v7) for type-safe database access
+- Designed comprehensive schema for photo management:
+  - **User** - Authentication with email, cascading deletes
+  - **Photo** - Full metadata including EXIF, S3 keys for 5 resolutions
+  - **Tag** - User-defined tags with optional colors
+  - **PhotoTag** - Many-to-many photo/tag relationships
+  - **Share** - Public gallery links with expiry and view counts
+  - **SharePhoto** - Many-to-many share/photo with sort order
+- Added database indexes for common queries (userId, takenAt, location)
+- Created db.ts module exporting types for app-wide use
+- Updated MANUAL_SETUP.md with PostgreSQL setup instructions
+
+### Files created/modified:
+- prisma/schema.prisma - Full database schema
+- prisma.config.ts - Prisma configuration
+- src/lib/db.ts - Type exports for app usage
+- MANUAL_SETUP.md - Database setup instructions
+
+### Next priorities:
+1. Task 1.2: PWA configuration (manifest, service worker)
+2. Task 1.5: Authentication setup
+3. Task 1.4: Basic responsive layout/shell
