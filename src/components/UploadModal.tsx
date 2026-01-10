@@ -1,13 +1,19 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import {
+  compressImage,
+  formatFileSize,
+  CompressionResult,
+} from "@/hooks/useImageCompression";
 
 interface UploadFile {
   file: File;
   preview: string;
   progress: number;
-  status: "pending" | "uploading" | "complete" | "error";
+  status: "pending" | "compressing" | "uploading" | "complete" | "error";
   error?: string;
+  compressionResult?: CompressionResult;
 }
 
 interface UploadModalProps {
@@ -52,22 +58,48 @@ export function UploadModal({
       const uploadFile = files[i];
       if (uploadFile.status !== "pending") continue;
 
-      // Update status to uploading
-      setFiles((prev) =>
-        prev.map((f, idx) =>
-          idx === i ? { ...f, status: "uploading" as const } : f
-        )
-      );
-
       try {
-        // Get presigned URL
+        // Step 1: Compress the image
+        setFiles((prev) =>
+          prev.map((f, idx) =>
+            idx === i ? { ...f, status: "compressing" as const } : f
+          )
+        );
+
+        const compressionResult = await compressImage(uploadFile.file, {
+          maxSizeMB: 2,
+          maxWidthOrHeight: 2048,
+          onProgress: (progress) => {
+            setFiles((prev) =>
+              prev.map((f, idx) =>
+                idx === i ? { ...f, progress: Math.round(progress * 50) } : f
+              )
+            );
+          },
+        });
+
+        // Store compression result and switch to uploading
+        setFiles((prev) =>
+          prev.map((f, idx) =>
+            idx === i
+              ? {
+                  ...f,
+                  status: "uploading" as const,
+                  compressionResult,
+                  progress: 50,
+                }
+              : f
+          )
+        );
+
+        // Step 2: Get presigned URL for the compressed file
         const response = await fetch("/api/upload", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            filename: uploadFile.file.name,
-            contentType: uploadFile.file.type,
-            fileSize: uploadFile.file.size,
+            filename: compressionResult.compressed.name,
+            contentType: compressionResult.compressed.type,
+            fileSize: compressionResult.compressed.size,
           }),
         });
 
@@ -77,13 +109,16 @@ export function UploadModal({
 
         const { uploadUrl } = await response.json();
 
-        // Upload to S3
+        // Step 3: Upload compressed file to S3
         const xhr = new XMLHttpRequest();
         xhr.upload.addEventListener("progress", (e) => {
           if (e.lengthComputable) {
-            const progress = Math.round((e.loaded / e.total) * 100);
+            // Progress: 50-100% is upload (first 50% was compression)
+            const uploadProgress = Math.round((e.loaded / e.total) * 50);
             setFiles((prev) =>
-              prev.map((f, idx) => (idx === i ? { ...f, progress } : f))
+              prev.map((f, idx) =>
+                idx === i ? { ...f, progress: 50 + uploadProgress } : f
+              )
             );
           }
         });
@@ -98,8 +133,8 @@ export function UploadModal({
           };
           xhr.onerror = () => reject(new Error("Upload failed"));
           xhr.open("PUT", uploadUrl);
-          xhr.setRequestHeader("Content-Type", uploadFile.file.type);
-          xhr.send(uploadFile.file);
+          xhr.setRequestHeader("Content-Type", compressionResult.compressed.type);
+          xhr.send(compressionResult.compressed);
         });
 
         // Mark as complete
@@ -144,7 +179,9 @@ export function UploadModal({
     [addFiles]
   );
 
-  const isUploading = files.some((f) => f.status === "uploading");
+  const isUploading = files.some(
+    (f) => f.status === "uploading" || f.status === "compressing"
+  );
   const canUpload = files.some((f) => f.status === "pending");
 
   if (!isOpen) return null;
@@ -212,16 +249,39 @@ export function UploadModal({
                   <p className="truncate text-sm font-medium">
                     {uploadFile.file.name}
                   </p>
+                  {uploadFile.status === "compressing" && (
+                    <>
+                      <p className="text-xs text-gray-500">Compressing...</p>
+                      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+                        <div
+                          className="h-full bg-black transition-all dark:bg-white"
+                          style={{ width: `${uploadFile.progress}%` }}
+                        />
+                      </div>
+                    </>
+                  )}
                   {uploadFile.status === "uploading" && (
-                    <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
-                      <div
-                        className="h-full bg-black transition-all dark:bg-white"
-                        style={{ width: `${uploadFile.progress}%` }}
-                      />
-                    </div>
+                    <>
+                      <p className="text-xs text-gray-500">Uploading...</p>
+                      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+                        <div
+                          className="h-full bg-black transition-all dark:bg-white"
+                          style={{ width: `${uploadFile.progress}%` }}
+                        />
+                      </div>
+                    </>
                   )}
                   {uploadFile.status === "complete" && (
-                    <p className="text-xs text-green-600">Uploaded</p>
+                    <p className="text-xs text-green-600">
+                      Uploaded
+                      {uploadFile.compressionResult &&
+                        uploadFile.compressionResult.compressionRatio > 1 && (
+                          <span className="ml-1 text-gray-500">
+                            ({formatFileSize(uploadFile.compressionResult.originalSize)} →{" "}
+                            {formatFileSize(uploadFile.compressionResult.compressedSize)})
+                          </span>
+                        )}
+                    </p>
                   )}
                   {uploadFile.status === "error" && (
                     <p className="text-xs text-red-600">{uploadFile.error}</p>

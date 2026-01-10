@@ -318,7 +318,32 @@
 
 ---
 
-## Summary: 10 Iterations Completed
+## 2026-01-10: Task 2.3 - Client-side Image Compression
+
+**Status:** Complete
+
+### What was done:
+- Installed browser-image-compression library
+- Created useImageCompression hook with configurable options
+- Integrated compression into upload flow
+- Added "Compressing..." status indicator during upload
+- Shows file size savings after successful upload (e.g., "3.2 MB → 1.1 MB")
+- Skips compression for small files (<500KB)
+
+### Compression Features:
+- Max file size: 2MB target
+- Max dimensions: 2048px width or height
+- Web Worker enabled for non-blocking compression
+- Progress callback support
+- Automatic bypass for already small files
+
+### Files created/modified:
+- src/hooks/useImageCompression.ts - Compression utilities
+- src/components/UploadModal.tsx - Integrated compression with upload
+
+---
+
+## Summary: 11 Iterations Completed
 
 ### Foundation (Phase 1)
 - [x] 1.1 Project setup (Next.js, TypeScript, Tailwind)
@@ -329,6 +354,7 @@
 
 ### Storage & Upload (Phase 2)
 - [x] 2.2 Image upload API endpoint
+- [x] 2.3 Client-side image compression
 - [x] 2.5 Upload progress UI with preview
 
 ### Photo Grid & Navigation (Phase 3-5)
@@ -337,7 +363,6 @@
 - [x] 5.1 Full-screen photo viewer modal
 
 ### Remaining Work
-- [ ] 2.3 Client-side image compression
 - [ ] 2.4 Server-side multi-resolution generation
 - [ ] 3.2 Virtualized scrolling
 - [ ] 3.3-3.6 Clustering features
