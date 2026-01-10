@@ -699,6 +699,33 @@
 
 ---
 
+## 2026-01-10: Task 3.12 - Filter by Tags in Grid View
+
+**Status:** Complete
+
+### What was done:
+- Created TagFilter component with horizontal scrollable tag buttons
+- Added filterByTags utility function to clustering library
+- Integrated tag filter bar below header (hidden during search)
+- Shows tag counts next to each tag name
+- Tags sorted by usage count (most used first)
+- Empty state when no photos match the filter
+
+### Tag Filter Features:
+- Multi-select tag filtering (OR logic)
+- Tag buttons with photo counts
+- "Clear all" button when filters active
+- Empty state with clear filter button
+- Horizontal scroll for many tags
+- Seamlessly integrates with clustering
+
+### Files created/modified:
+- src/components/TagFilter.tsx - Tag filter bar component
+- src/lib/clustering.ts - Added filterByTags function
+- src/app/page.tsx - Integrated tag filter with state management
+
+---
+
 ### Remaining Work
 - [ ] 2.4 Server-side multi-resolution generation
 - [ ] 3.5 Location-based clustering

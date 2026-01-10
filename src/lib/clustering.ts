@@ -216,6 +216,23 @@ const SAMPLE_TAGS: Tag[] = [
 export { SAMPLE_TAGS, TAG_COLORS };
 
 /**
+ * Filter photos by selected tags.
+ * Returns photos that have at least one of the selected tags.
+ */
+export function filterByTags(
+  photos: PhotoWithDate[],
+  tagIds: string[]
+): PhotoWithDate[] {
+  if (tagIds.length === 0) {
+    return photos;
+  }
+
+  return photos.filter((photo) =>
+    photo.tags?.some((tag) => tagIds.includes(tag.id))
+  );
+}
+
+/**
  * Generate mock photos with dates and metadata for testing.
  */
 export function generateMockPhotosWithDates(count: number): PhotoWithDate[] {

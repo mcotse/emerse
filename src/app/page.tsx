@@ -11,9 +11,11 @@ import {
   generateMockPhotosWithDates,
   clusterByMonth,
   clusterByDay,
+  filterByTags,
   SAMPLE_TAGS,
 } from "@/lib/clustering";
 import { TagManager } from "@/components/TagManager";
+import { TagFilter } from "@/components/TagFilter";
 import { SearchResults } from "@/components/SearchResults";
 import { searchPhotos, type SearchResult } from "@/lib/search";
 
@@ -37,6 +39,7 @@ export default function Home() {
   const [availableTags, setAvailableTags] = useState<Tag[]>(SAMPLE_TAGS);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[] | null>(null);
+  const [selectedTagFilters, setSelectedTagFilters] = useState<string[]>([]);
 
   const { zoom, containerRef, isPinching } = usePinchZoom({
     minZoom: 0.5,
@@ -104,10 +107,17 @@ export default function Home() {
     [photos]
   );
 
+  // Filter photos by selected tags
+  const filteredPhotos = useMemo(() => {
+    return filterByTags(photos, selectedTagFilters);
+  }, [photos, selectedTagFilters]);
+
+  const hasFilteredPhotos = filteredPhotos.length > 0;
+
   // Cluster photos based on selected mode
   const clusters = useMemo(() => {
-    return clusterMode === "month" ? clusterByMonth(photos) : clusterByDay(photos);
-  }, [photos, clusterMode]);
+    return clusterMode === "month" ? clusterByMonth(filteredPhotos) : clusterByDay(filteredPhotos);
+  }, [filteredPhotos, clusterMode]);
 
   // Flatten clusters for photo viewer navigation
   const allPhotos = useMemo(
@@ -134,6 +144,16 @@ export default function Home() {
       onSearch={handleSearch}
     >
       <div ref={containerRef} className="min-h-full">
+        {/* Tag filter bar */}
+        {!searchResults && (
+          <TagFilter
+            tags={availableTags}
+            photos={photos}
+            selectedTags={selectedTagFilters}
+            onSelectedTagsChange={setSelectedTagFilters}
+          />
+        )}
+
         {/* Search results indicator */}
         {searchQuery && searchResults && (
           <div className="border-b border-gray-200 bg-gray-50 px-4 py-2 dark:border-gray-800 dark:bg-gray-900">
@@ -159,7 +179,7 @@ export default function Home() {
               setViewerState({ isOpen: true, index });
             }}
           />
-        ) : hasPhotos ? (
+        ) : hasFilteredPhotos ? (
           <>
             <ClusteredPhotoGrid
               clusters={clusters}
@@ -172,6 +192,23 @@ export default function Home() {
               </div>
             )}
           </>
+        ) : hasPhotos && selectedTagFilters.length > 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="mb-4 rounded-full bg-gray-100 p-4 dark:bg-gray-900">
+              <FilterIcon className="h-8 w-8 text-gray-400" />
+            </div>
+            <h2 className="mb-2 text-lg font-medium">No photos match the filter</h2>
+            <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
+              Try selecting different tags or clear the filter
+            </p>
+            <button
+              type="button"
+              onClick={() => setSelectedTagFilters([])}
+              className="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200"
+            >
+              Clear Filter
+            </button>
+          </div>
         ) : (
           <div className="p-4">
             <EmptyState onUploadClick={() => setIsUploadOpen(true)} />
@@ -247,6 +284,25 @@ function PhotoIcon({ className }: { className?: string }) {
         strokeLinecap="round"
         strokeLinejoin="round"
         d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"
+      />
+    </svg>
+  );
+}
+
+function FilterIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+      className={className}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 0 1-.659 1.591l-5.432 5.432a2.25 2.25 0 0 0-.659 1.591v2.927a2.25 2.25 0 0 1-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 0 0-.659-1.591L3.659 7.409A2.25 2.25 0 0 1 3 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0 1 12 3Z"
       />
     </svg>
   );
