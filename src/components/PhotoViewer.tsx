@@ -214,6 +214,9 @@ export function PhotoViewer({
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Photo viewer - ${currentIndex + 1} of ${photos.length}`}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
@@ -252,24 +255,34 @@ export function PhotoViewer({
 
       {/* Share confirmation toast */}
       {shareState.shareUrl && (
-        <div className="absolute left-1/2 top-16 z-20 -translate-x-1/2 rounded-lg bg-green-600 px-4 py-2 text-sm text-white shadow-lg">
+        <div
+          role="status"
+          aria-live="polite"
+          className="absolute left-1/2 top-16 z-20 -translate-x-1/2 rounded-lg bg-green-600 px-4 py-2 text-sm text-white shadow-lg"
+        >
           Link copied to clipboard!
           <button
             type="button"
             onClick={() => setShareState({ isSharing: false })}
             className="ml-2 text-white/80 hover:text-white"
+            aria-label="Dismiss notification"
           >
             Dismiss
           </button>
         </div>
       )}
       {shareState.error && (
-        <div className="absolute left-1/2 top-16 z-20 -translate-x-1/2 rounded-lg bg-red-600 px-4 py-2 text-sm text-white shadow-lg">
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="absolute left-1/2 top-16 z-20 -translate-x-1/2 rounded-lg bg-red-600 px-4 py-2 text-sm text-white shadow-lg"
+        >
           {shareState.error}
           <button
             type="button"
             onClick={() => setShareState({ isSharing: false })}
             className="ml-2 text-white/80 hover:text-white"
+            aria-label="Dismiss error"
           >
             Dismiss
           </button>
@@ -467,12 +480,14 @@ function MetadataPanel({ photo, isOpen, onClose, onTagsChange, availableTags }: 
   };
 
   return (
-    <div
+    <aside
+      role="complementary"
+      aria-label="Photo details"
       className="absolute bottom-0 right-0 top-0 w-80 overflow-y-auto bg-black/90 p-4 backdrop-blur-lg"
       onClick={(e) => e.stopPropagation()}
     >
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-white">Details</h2>
+        <h2 id="metadata-panel-title" className="text-lg font-semibold text-white">Details</h2>
         <button
           type="button"
           onClick={onClose}
@@ -584,6 +599,6 @@ function MetadataPanel({ photo, isOpen, onClose, onTagsChange, availableTags }: 
           />
         </div>
       </div>
-    </div>
+    </aside>
   );
 }

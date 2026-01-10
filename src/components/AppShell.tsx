@@ -33,6 +33,13 @@ export function AppShell({
 }: AppShellProps) {
   return (
     <div className="flex min-h-screen flex-col bg-white dark:bg-black">
+      {/* Skip to main content link for keyboard users */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-black focus:px-4 focus:py-2 focus:text-white dark:focus:bg-white dark:focus:text-black"
+      >
+        Skip to main content
+      </a>
       <Header
         onUploadClick={onUploadClick}
         onTagsClick={onTagsClick}
@@ -43,7 +50,9 @@ export function AppShell({
         tags={tags}
         onSearch={onSearch}
       />
-      <main className="flex-1">{children}</main>
+      <main id="main-content" className="flex-1" tabIndex={-1}>
+        {children}
+      </main>
       <OfflineIndicator />
     </div>
   );

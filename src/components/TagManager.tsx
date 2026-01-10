@@ -51,11 +51,16 @@ export function TagManager({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="tag-manager-title"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+    >
       <div className="mx-4 w-full max-w-md rounded-xl bg-white shadow-2xl dark:bg-gray-900">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-gray-700">
-          <h2 className="text-lg font-semibold">Manage Tags</h2>
+          <h2 id="tag-manager-title" className="text-lg font-semibold">Manage Tags</h2>
           <button
             type="button"
             onClick={onClose}
