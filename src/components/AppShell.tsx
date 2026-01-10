@@ -6,6 +6,7 @@ import type { ClusterMode } from "@/app/page";
 import { useDarkMode } from "@/hooks/useDarkMode";
 import type { PhotoWithDate, Tag } from "@/lib/clustering";
 import { SearchBar } from "./SearchBar";
+import { OfflineIndicator } from "./OfflineIndicator";
 
 interface AppShellProps {
   children: ReactNode;
@@ -43,6 +44,7 @@ export function AppShell({
         onSearch={onSearch}
       />
       <main className="flex-1">{children}</main>
+      <OfflineIndicator />
     </div>
   );
 }
