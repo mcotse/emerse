@@ -4,6 +4,7 @@ import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { PhotoGrid, Photo } from "@/components/PhotoGrid";
 import { PhotoViewer } from "@/components/PhotoViewer";
+import { UploadModal } from "@/components/UploadModal";
 import { usePinchZoom, zoomToColumns } from "@/hooks/usePinchZoom";
 
 // Mock photos for development - will be replaced with real data
@@ -22,6 +23,7 @@ export default function Home() {
     isOpen: boolean;
     index: number;
   }>({ isOpen: false, index: 0 });
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
 
   const { zoom, containerRef, isPinching } = usePinchZoom({
     minZoom: 0.5,
@@ -44,7 +46,7 @@ export default function Home() {
   }
 
   return (
-    <AppShell>
+    <AppShell onUploadClick={() => setIsUploadOpen(true)}>
       <div ref={containerRef} className="min-h-full">
         {hasPhotos ? (
           <>
@@ -61,7 +63,7 @@ export default function Home() {
           </>
         ) : (
           <div className="p-4">
-            <EmptyState />
+            <EmptyState onUploadClick={() => setIsUploadOpen(true)} />
           </div>
         )}
       </div>
@@ -73,11 +75,24 @@ export default function Home() {
           onClose={closeViewer}
         />
       )}
+
+      <UploadModal
+        isOpen={isUploadOpen}
+        onClose={() => setIsUploadOpen(false)}
+        onUploadComplete={() => {
+          // TODO: Refresh photo list
+          console.log("Upload complete");
+        }}
+      />
     </AppShell>
   );
 }
 
-function EmptyState() {
+interface EmptyStateProps {
+  onUploadClick?: () => void;
+}
+
+function EmptyState({ onUploadClick }: EmptyStateProps) {
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
       <div className="mb-4 rounded-full bg-gray-100 p-4 dark:bg-gray-900">
@@ -89,6 +104,7 @@ function EmptyState() {
       </p>
       <button
         type="button"
+        onClick={onUploadClick}
         className="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200"
       >
         Upload Photos

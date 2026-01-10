@@ -287,3 +287,59 @@
 1. Task 2.5: Upload progress UI with preview
 2. Task 2.3: Client-side image compression
 3. Task 3.2: Virtualized scrolling for performance
+
+---
+
+## 2026-01-10: Task 2.5 - Upload Progress UI with Preview
+
+**Status:** Complete
+
+### What was done:
+- Created UploadModal component with drag-and-drop support
+- Added file preview thumbnails before upload
+- Implemented real-time upload progress tracking
+- Connected header upload button to modal
+- Added upload button to empty state
+
+### Upload UI Features:
+- Drag-and-drop file zone
+- Click to browse files
+- Image type filtering (accepts image/* only)
+- Preview thumbnails of selected files
+- Progress bar for each uploading file
+- Status indicators (pending, uploading, complete, error)
+- Cancel/remove files before upload
+- Uploads directly to S3 using presigned URLs
+
+### Files created/modified:
+- src/components/UploadModal.tsx - Upload modal with drag-drop and progress
+- src/components/AppShell.tsx - Added onUploadClick prop
+- src/app/page.tsx - Integrated upload modal
+
+---
+
+## Summary: 10 Iterations Completed
+
+### Foundation (Phase 1)
+- [x] 1.1 Project setup (Next.js, TypeScript, Tailwind)
+- [x] 1.2 PWA configuration (manifest, service worker)
+- [x] 1.4 Basic responsive layout/shell
+- [x] 1.5 Authentication setup (NextAuth)
+- [x] 1.6 Database schema design (Prisma)
+
+### Storage & Upload (Phase 2)
+- [x] 2.2 Image upload API endpoint
+- [x] 2.5 Upload progress UI with preview
+
+### Photo Grid & Navigation (Phase 3-5)
+- [x] 3.1 Basic photo grid component
+- [x] 4.2 Pinch-to-zoom gesture detection
+- [x] 5.1 Full-screen photo viewer modal
+
+### Remaining Work
+- [ ] 2.3 Client-side image compression
+- [ ] 2.4 Server-side multi-resolution generation
+- [ ] 3.2 Virtualized scrolling
+- [ ] 3.3-3.6 Clustering features
+- [ ] 5.2-5.5 Photo viewer enhancements
+- [ ] Phase 6-7: Polish and public sharing

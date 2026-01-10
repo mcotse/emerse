@@ -5,18 +5,23 @@ import { ReactNode, useState } from "react";
 
 interface AppShellProps {
   children: ReactNode;
+  onUploadClick?: () => void;
 }
 
-export function AppShell({ children }: AppShellProps) {
+export function AppShell({ children, onUploadClick }: AppShellProps) {
   return (
     <div className="flex min-h-screen flex-col bg-white dark:bg-black">
-      <Header />
+      <Header onUploadClick={onUploadClick} />
       <main className="flex-1">{children}</main>
     </div>
   );
 }
 
-function Header() {
+interface HeaderProps {
+  onUploadClick?: () => void;
+}
+
+function Header({ onUploadClick }: HeaderProps) {
   const { data: session } = useSession();
   const [showMenu, setShowMenu] = useState(false);
 
@@ -27,6 +32,7 @@ function Header() {
         <nav className="flex items-center gap-2">
           <button
             type="button"
+            onClick={onUploadClick}
             className="rounded-full p-2 hover:bg-gray-100 dark:hover:bg-gray-900"
             aria-label="Upload photos"
           >
