@@ -530,7 +530,31 @@
 
 ---
 
-## Summary: 19 Iterations Completed
+## 2026-01-10: Task 6.3 - Dark Mode Toggle
+
+**Status:** Complete
+
+### What was done:
+- Created useDarkMode hook for theme management
+- Added dark mode toggle button to header
+- Persists theme preference in localStorage
+- Supports light, dark, and system preferences
+- Responds to system preference changes
+
+### Dark Mode Features:
+- Toggle button with sun/moon icons
+- Saved preference persists across sessions
+- System preference detection
+- Smooth transition between modes
+- Hydration-safe (shows after mount)
+
+### Files created/modified:
+- src/hooks/useDarkMode.ts - Theme management hook
+- src/components/AppShell.tsx - Added toggle and icons
+
+---
+
+## Summary: 20 Iterations Completed
 
 ### Foundation (Phase 1)
 - [x] 1.1 Project setup (Next.js, TypeScript, Tailwind)
@@ -556,6 +580,7 @@
 - [x] 5.3 Pinch-to-zoom within photo
 - [x] 5.4 Photo metadata panel
 - [x] 6.1 Lazy loading with blur-up placeholders
+- [x] 6.3 Dark mode toggle
 - [x] 5.5 Share functionality
 - [x] 7.1 Generate shareable portfolio links
 - [x] 7.2 Public gallery view (no auth)
