@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useState, useMemo } from "react";
 import {
   compressImage,
   formatFileSize,
@@ -8,6 +8,7 @@ import {
 } from "@/hooks/useImageCompression";
 
 interface UploadFile {
+  id: string;
   file: File;
   preview: string;
   progress: number;
@@ -19,78 +20,130 @@ interface UploadFile {
 interface UploadModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onUploadComplete?: () => void;
+  onUploadComplete?: (uploadedCount: number) => void;
+  maxConcurrentUploads?: number;
+  maxFileSizeMB?: number;
 }
+
+const MAX_FILE_SIZE_DEFAULT = 50; // 50MB max per file
+const MAX_CONCURRENT_DEFAULT = 3;
 
 export function UploadModal({
   isOpen,
   onClose,
   onUploadComplete,
+  maxConcurrentUploads = MAX_CONCURRENT_DEFAULT,
+  maxFileSizeMB = MAX_FILE_SIZE_DEFAULT,
 }: UploadModalProps) {
   const [files, setFiles] = useState<UploadFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
 
-  const addFiles = useCallback((newFiles: FileList | File[]) => {
-    const fileArray = Array.from(newFiles);
-    const uploadFiles: UploadFile[] = fileArray
-      .filter((f) => f.type.startsWith("image/"))
-      .map((file) => ({
-        file,
-        preview: URL.createObjectURL(file),
-        progress: 0,
-        status: "pending" as const,
-      }));
-    setFiles((prev) => [...prev, ...uploadFiles]);
-  }, []);
+  // Generate unique ID for each file
+  const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-  const removeFile = useCallback((index: number) => {
+  // Stats
+  const stats = useMemo(() => {
+    const pending = files.filter((f) => f.status === "pending").length;
+    const processing = files.filter(
+      (f) => f.status === "compressing" || f.status === "uploading"
+    ).length;
+    const complete = files.filter((f) => f.status === "complete").length;
+    const errored = files.filter((f) => f.status === "error").length;
+    const total = files.length;
+    return { pending, processing, complete, errored, total };
+  }, [files]);
+
+  const addFiles = useCallback(
+    (newFiles: FileList | File[]) => {
+      const fileArray = Array.from(newFiles);
+      const maxSizeBytes = maxFileSizeMB * 1024 * 1024;
+
+      const uploadFiles: UploadFile[] = fileArray
+        .filter((f) => f.type.startsWith("image/"))
+        .map((file) => {
+          const isOversize = file.size > maxSizeBytes;
+          return {
+            id: generateId(),
+            file,
+            preview: URL.createObjectURL(file),
+            progress: 0,
+            status: isOversize ? ("error" as const) : ("pending" as const),
+            error: isOversize
+              ? `File exceeds ${maxFileSizeMB}MB limit`
+              : undefined,
+          };
+        });
+
+      setFiles((prev) => [...prev, ...uploadFiles]);
+    },
+    [maxFileSizeMB]
+  );
+
+  const removeFile = useCallback((id: string) => {
     setFiles((prev) => {
-      const file = prev[index];
+      const file = prev.find((f) => f.id === id);
       if (file) {
         URL.revokeObjectURL(file.preview);
       }
-      return prev.filter((_, i) => i !== index);
+      return prev.filter((f) => f.id !== id);
     });
   }, []);
 
-  const uploadFiles = useCallback(async () => {
-    for (let i = 0; i < files.length; i++) {
-      const uploadFile = files[i];
-      if (uploadFile.status !== "pending") continue;
+  const clearAll = useCallback(() => {
+    files.forEach((f) => URL.revokeObjectURL(f.preview));
+    setFiles([]);
+  }, [files]);
 
+  const clearCompleted = useCallback(() => {
+    setFiles((prev) => {
+      prev.filter((f) => f.status === "complete").forEach((f) => {
+        URL.revokeObjectURL(f.preview);
+      });
+      return prev.filter((f) => f.status !== "complete");
+    });
+  }, []);
+
+  const retryFailed = useCallback(() => {
+    setFiles((prev) =>
+      prev.map((f) =>
+        f.status === "error" && !f.error?.includes("limit")
+          ? { ...f, status: "pending" as const, error: undefined, progress: 0 }
+          : f
+      )
+    );
+  }, []);
+
+  const updateFile = useCallback(
+    (id: string, updates: Partial<UploadFile>) => {
+      setFiles((prev) =>
+        prev.map((f) => (f.id === id ? { ...f, ...updates } : f))
+      );
+    },
+    []
+  );
+
+  const uploadSingleFile = useCallback(
+    async (uploadFile: UploadFile) => {
       try {
         // Step 1: Compress the image
-        setFiles((prev) =>
-          prev.map((f, idx) =>
-            idx === i ? { ...f, status: "compressing" as const } : f
-          )
-        );
+        updateFile(uploadFile.id, { status: "compressing" });
 
         const compressionResult = await compressImage(uploadFile.file, {
           maxSizeMB: 2,
           maxWidthOrHeight: 2048,
           onProgress: (progress) => {
-            setFiles((prev) =>
-              prev.map((f, idx) =>
-                idx === i ? { ...f, progress: Math.round(progress * 50) } : f
-              )
-            );
+            updateFile(uploadFile.id, {
+              progress: Math.round(progress * 50),
+            });
           },
         });
 
         // Store compression result and switch to uploading
-        setFiles((prev) =>
-          prev.map((f, idx) =>
-            idx === i
-              ? {
-                  ...f,
-                  status: "uploading" as const,
-                  compressionResult,
-                  progress: 50,
-                }
-              : f
-          )
-        );
+        updateFile(uploadFile.id, {
+          status: "uploading",
+          compressionResult,
+          progress: 50,
+        });
 
         // Step 2: Get presigned URL for the compressed file
         const response = await fetch("/api/upload", {
@@ -113,13 +166,10 @@ export function UploadModal({
         const xhr = new XMLHttpRequest();
         xhr.upload.addEventListener("progress", (e) => {
           if (e.lengthComputable) {
-            // Progress: 50-100% is upload (first 50% was compression)
             const uploadProgress = Math.round((e.loaded / e.total) * 50);
-            setFiles((prev) =>
-              prev.map((f, idx) =>
-                idx === i ? { ...f, progress: 50 + uploadProgress } : f
-              )
-            );
+            updateFile(uploadFile.id, {
+              progress: 50 + uploadProgress,
+            });
           }
         });
 
@@ -131,35 +181,43 @@ export function UploadModal({
               reject(new Error("Upload failed"));
             }
           };
-          xhr.onerror = () => reject(new Error("Upload failed"));
+          xhr.onerror = () => reject(new Error("Network error"));
           xhr.open("PUT", uploadUrl);
           xhr.setRequestHeader("Content-Type", compressionResult.compressed.type);
           xhr.send(compressionResult.compressed);
         });
 
         // Mark as complete
-        setFiles((prev) =>
-          prev.map((f, idx) =>
-            idx === i ? { ...f, status: "complete" as const, progress: 100 } : f
-          )
-        );
+        updateFile(uploadFile.id, { status: "complete", progress: 100 });
+        return true;
       } catch (error) {
-        setFiles((prev) =>
-          prev.map((f, idx) =>
-            idx === i
-              ? {
-                  ...f,
-                  status: "error" as const,
-                  error: error instanceof Error ? error.message : "Upload failed",
-                }
-              : f
-          )
-        );
+        updateFile(uploadFile.id, {
+          status: "error",
+          error: error instanceof Error ? error.message : "Upload failed",
+        });
+        return false;
       }
+    },
+    [updateFile]
+  );
+
+  const uploadFiles = useCallback(async () => {
+    const pendingFiles = files.filter((f) => f.status === "pending");
+    if (pendingFiles.length === 0) return;
+
+    let uploadedCount = 0;
+
+    // Process files in batches for concurrent uploads
+    for (let i = 0; i < pendingFiles.length; i += maxConcurrentUploads) {
+      const batch = pendingFiles.slice(i, i + maxConcurrentUploads);
+      const results = await Promise.all(
+        batch.map((file) => uploadSingleFile(file))
+      );
+      uploadedCount += results.filter(Boolean).length;
     }
 
-    onUploadComplete?.();
-  }, [files, onUploadComplete]);
+    onUploadComplete?.(uploadedCount);
+  }, [files, maxConcurrentUploads, uploadSingleFile, onUploadComplete]);
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
@@ -174,15 +232,16 @@ export function UploadModal({
     (e: React.ChangeEvent<HTMLInputElement>) => {
       if (e.target.files) {
         addFiles(e.target.files);
+        // Reset input so same files can be selected again
+        e.target.value = "";
       }
     },
     [addFiles]
   );
 
-  const isUploading = files.some(
-    (f) => f.status === "uploading" || f.status === "compressing"
-  );
-  const canUpload = files.some((f) => f.status === "pending");
+  const isUploading = stats.processing > 0;
+  const canUpload = stats.pending > 0;
+  const hasFiles = files.length > 0;
 
   if (!isOpen) return null;
 
@@ -196,7 +255,18 @@ export function UploadModal({
       <div className="w-full max-w-lg rounded-xl bg-white shadow-xl dark:bg-gray-900">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 dark:border-gray-700">
-          <h2 id="upload-modal-title" className="text-lg font-semibold">Upload Photos</h2>
+          <div>
+            <h2 id="upload-modal-title" className="text-lg font-semibold">
+              Upload Photos
+            </h2>
+            {hasFiles && (
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                {stats.complete}/{stats.total} uploaded
+                {stats.errored > 0 && ` · ${stats.errored} failed`}
+                {stats.processing > 0 && ` · ${stats.processing} in progress`}
+              </p>
+            )}
+          </div>
           <button
             type="button"
             onClick={onClose}
@@ -211,7 +281,7 @@ export function UploadModal({
         <div
           className={`m-4 rounded-lg border-2 border-dashed p-8 text-center transition-colors ${
             isDragging
-              ? "border-black bg-gray-50 dark:border-white dark:bg-gray-800"
+              ? "border-blue-500 bg-blue-50 dark:border-blue-400 dark:bg-blue-900/20"
               : "border-gray-300 dark:border-gray-600"
           }`}
           onDragOver={(e) => {
@@ -221,7 +291,11 @@ export function UploadModal({
           onDragLeave={() => setIsDragging(false)}
           onDrop={handleDrop}
         >
-          <UploadIcon className="mx-auto h-10 w-10 text-gray-400" />
+          <UploadIcon
+            className={`mx-auto h-10 w-10 ${
+              isDragging ? "text-blue-500" : "text-gray-400"
+            }`}
+          />
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
             Drag and drop photos here, or
           </p>
@@ -235,76 +309,137 @@ export function UploadModal({
               className="hidden"
             />
           </label>
+          <p className="mt-2 text-xs text-gray-400">
+            Max {maxFileSizeMB}MB per file · Concurrent uploads: {maxConcurrentUploads}
+          </p>
         </div>
 
         {/* File list */}
-        {files.length > 0 && (
-          <div className="max-h-60 overflow-y-auto border-t border-gray-200 px-4 py-2 dark:border-gray-700">
-            {files.map((uploadFile, index) => (
-              <div
-                key={index}
-                className="flex items-center gap-3 py-2"
-              >
-                <img
-                  src={uploadFile.preview}
-                  alt=""
-                  className="h-12 w-12 rounded object-cover"
-                />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">
-                    {uploadFile.file.name}
-                  </p>
-                  {uploadFile.status === "compressing" && (
-                    <>
-                      <p className="text-xs text-gray-500">Compressing...</p>
-                      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
-                        <div
-                          className="h-full bg-black transition-all dark:bg-white"
-                          style={{ width: `${uploadFile.progress}%` }}
-                        />
-                      </div>
-                    </>
-                  )}
-                  {uploadFile.status === "uploading" && (
-                    <>
-                      <p className="text-xs text-gray-500">Uploading...</p>
-                      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
-                        <div
-                          className="h-full bg-black transition-all dark:bg-white"
-                          style={{ width: `${uploadFile.progress}%` }}
-                        />
-                      </div>
-                    </>
-                  )}
-                  {uploadFile.status === "complete" && (
-                    <p className="text-xs text-green-600">
-                      Uploaded
-                      {uploadFile.compressionResult &&
-                        uploadFile.compressionResult.compressionRatio > 1 && (
-                          <span className="ml-1 text-gray-500">
-                            ({formatFileSize(uploadFile.compressionResult.originalSize)} →{" "}
-                            {formatFileSize(uploadFile.compressionResult.compressedSize)})
-                          </span>
-                        )}
-                    </p>
-                  )}
-                  {uploadFile.status === "error" && (
-                    <p className="text-xs text-red-600">{uploadFile.error}</p>
-                  )}
-                </div>
-                {uploadFile.status === "pending" && (
+        {hasFiles && (
+          <>
+            {/* Quick actions */}
+            <div className="flex items-center justify-between border-t border-gray-200 px-4 py-2 dark:border-gray-700">
+              <span className="text-xs text-gray-500">
+                {stats.total} file{stats.total !== 1 ? "s" : ""} selected
+              </span>
+              <div className="flex gap-2">
+                {stats.errored > 0 && (
                   <button
                     type="button"
-                    onClick={() => removeFile(index)}
-                    className="rounded p-1 hover:bg-gray-100 dark:hover:bg-gray-800"
-                    aria-label="Remove"
+                    onClick={retryFailed}
+                    className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400"
                   >
-                    <CloseIcon className="h-4 w-4" />
+                    Retry failed
                   </button>
                 )}
+                {stats.complete > 0 && (
+                  <button
+                    type="button"
+                    onClick={clearCompleted}
+                    className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400"
+                  >
+                    Clear completed
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={clearAll}
+                  className="text-xs text-red-600 hover:text-red-700"
+                >
+                  Clear all
+                </button>
               </div>
-            ))}
-          </div>
+            </div>
+
+            {/* File list */}
+            <div className="max-h-60 overflow-y-auto border-t border-gray-200 px-4 py-2 dark:border-gray-700">
+              {files.map((uploadFile) => (
+                <div
+                  key={uploadFile.id}
+                  className="flex items-center gap-3 py-2"
+                >
+                  <img
+                    src={uploadFile.preview}
+                    alt=""
+                    className="h-12 w-12 rounded object-cover"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">
+                      {uploadFile.file.name}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {formatFileSize(uploadFile.file.size)}
+                    </p>
+                    {uploadFile.status === "compressing" && (
+                      <>
+                        <div className="mt-1 flex items-center gap-2">
+                          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+                            <div
+                              className="h-full bg-yellow-500 transition-all"
+                              style={{ width: `${uploadFile.progress}%` }}
+                            />
+                          </div>
+                          <span className="text-xs text-gray-500">
+                            Compressing
+                          </span>
+                        </div>
+                      </>
+                    )}
+                    {uploadFile.status === "uploading" && (
+                      <>
+                        <div className="mt-1 flex items-center gap-2">
+                          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+                            <div
+                              className="h-full bg-blue-500 transition-all"
+                              style={{ width: `${uploadFile.progress}%` }}
+                            />
+                          </div>
+                          <span className="text-xs text-gray-500">
+                            {uploadFile.progress}%
+                          </span>
+                        </div>
+                      </>
+                    )}
+                    {uploadFile.status === "complete" && (
+                      <p className="flex items-center gap-1 text-xs text-green-600">
+                        <CheckIcon className="h-3 w-3" />
+                        Uploaded
+                        {uploadFile.compressionResult &&
+                          uploadFile.compressionResult.compressionRatio > 1 && (
+                            <span className="ml-1 text-gray-500">
+                              (saved{" "}
+                              {Math.round(
+                                (1 -
+                                  uploadFile.compressionResult.compressedSize /
+                                    uploadFile.compressionResult.originalSize) *
+                                  100
+                              )}
+                              %)
+                            </span>
+                          )}
+                      </p>
+                    )}
+                    {uploadFile.status === "error" && (
+                      <p className="flex items-center gap-1 text-xs text-red-600">
+                        <ErrorIcon className="h-3 w-3" />
+                        {uploadFile.error}
+                      </p>
+                    )}
+                  </div>
+                  {uploadFile.status === "pending" && (
+                    <button
+                      type="button"
+                      onClick={() => removeFile(uploadFile.id)}
+                      className="rounded p-1 hover:bg-gray-100 dark:hover:bg-gray-800"
+                      aria-label="Remove"
+                    >
+                      <CloseIcon className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </>
         )}
 
         {/* Footer */}
@@ -314,7 +449,7 @@ export function UploadModal({
             onClick={onClose}
             className="rounded-lg px-4 py-2 text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-800"
           >
-            Cancel
+            {stats.complete > 0 ? "Done" : "Cancel"}
           </button>
           <button
             type="button"
@@ -322,7 +457,11 @@ export function UploadModal({
             disabled={!canUpload || isUploading}
             className="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-gray-200"
           >
-            {isUploading ? "Uploading..." : "Upload"}
+            {isUploading
+              ? `Uploading ${stats.processing}...`
+              : canUpload
+                ? `Upload ${stats.pending}`
+                : "Upload"}
           </button>
         </div>
       </div>
@@ -363,6 +502,44 @@ function UploadIcon({ className }: { className?: string }) {
         strokeLinecap="round"
         strokeLinejoin="round"
         d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5"
+      />
+    </svg>
+  );
+}
+
+function CheckIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={2}
+      stroke="currentColor"
+      className={className}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="m4.5 12.75 6 6 9-13.5"
+      />
+    </svg>
+  );
+}
+
+function ErrorIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={2}
+      stroke="currentColor"
+      className={className}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z"
       />
     </svg>
   );
