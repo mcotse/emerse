@@ -6,6 +6,7 @@ import { ClusteredPhotoGrid } from "@/components/PhotoGrid";
 import { PhotoViewer } from "@/components/PhotoViewer";
 import { UploadModal } from "@/components/UploadModal";
 import { usePinchZoom, zoomToColumns } from "@/hooks/usePinchZoom";
+import { useResponsiveColumns } from "@/hooks/useResponsiveColumns";
 import type { PhotoWithDate, Tag } from "@/lib/clustering";
 import {
   generateMockPhotosWithDates,
@@ -46,13 +47,23 @@ export default function Home() {
   const [searchResults, setSearchResults] = useState<SearchResult[] | null>(null);
   const [selectedTagFilters, setSelectedTagFilters] = useState<string[]>([]);
 
+  // Responsive columns based on screen size
+  const responsiveColumns = useResponsiveColumns({
+    mobile: 2,
+    tablet: 3,
+    desktop: 4,
+    large: 6,
+  });
+
   const { zoom, containerRef, isPinching } = usePinchZoom({
     minZoom: 0.5,
     maxZoom: 2,
     initialZoom: 1,
   });
 
-  const columns = zoomToColumns(zoom, COLUMN_OPTIONS);
+  // Use pinch-zoom columns when actively zooming, otherwise use responsive
+  const zoomColumns = zoomToColumns(zoom, COLUMN_OPTIONS);
+  const columns = isPinching ? zoomColumns : responsiveColumns;
 
   const hasPhotos = photos.length > 0;
 
@@ -159,7 +170,7 @@ export default function Home() {
       tags={availableTags}
       onSearch={handleSearch}
     >
-      <div ref={containerRef} className="min-h-full">
+      <div ref={containerRef} className="relative flex min-h-0 flex-1 flex-col">
         {/* Tag filter bar */}
         {!searchResults && (
           <TagFilter

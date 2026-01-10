@@ -68,7 +68,7 @@ function PhotoGridItem({ photo, onClick }: PhotoGridItemProps) {
         src={photo.thumbnailUrl}
         alt={photo.alt ?? "Photo"}
         fill
-        sizes={`(max-width: 768px) ${100 / 3}vw, ${100 / 4}vw`}
+        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 16vw"
         className={`object-cover transition-opacity duration-300 ${
           isLoaded ? "opacity-100" : hasBlur ? "opacity-100" : "opacity-0"
         }`}
@@ -158,8 +158,7 @@ export function VirtualizedPhotoGrid({
   return (
     <div
       ref={parentRef}
-      className="h-[calc(100vh-3.5rem)] overflow-auto"
-      style={{ contain: "strict" }}
+      className="flex-1 overflow-auto"
     >
       <div
         style={{
@@ -185,7 +184,7 @@ export function VirtualizedPhotoGrid({
               }}
             >
               <div
-                className="grid h-full"
+                className="grid"
                 style={{
                   gridTemplateColumns: `repeat(${columns}, 1fr)`,
                   gap: `${gap}px`,
@@ -249,6 +248,19 @@ export function ClusteredPhotoGrid({
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [renderKey, setRenderKey] = useState(0);
   const prevClustersRef = useRef<PhotoCluster[]>(clusters);
+  const [containerWidth, setContainerWidth] = useState(0);
+
+  // Measure container width after mount and on resize
+  useEffect(() => {
+    const updateWidth = () => {
+      if (parentRef.current) {
+        setContainerWidth(parentRef.current.clientWidth);
+      }
+    };
+    updateWidth();
+    window.addEventListener("resize", updateWidth);
+    return () => window.removeEventListener("resize", updateWidth);
+  }, []);
 
   // Detect cluster changes and trigger transition
   useEffect(() => {
@@ -306,12 +318,12 @@ export function ClusteredPhotoGrid({
       if (row.type === "header") {
         return 56; // Header height
       }
-      if (typeof window === "undefined") return 120;
-      const containerWidth = parentRef.current?.clientWidth ?? window.innerWidth;
-      const cellWidth = (containerWidth - gap * (columns - 1)) / columns;
+      // Use measured containerWidth, fallback to reasonable default
+      const width = containerWidth || (typeof window !== "undefined" ? window.innerWidth : 1280);
+      const cellWidth = (width - gap * (columns - 1)) / columns;
       return cellWidth + gap;
     },
-    [rows, columns, gap]
+    [rows, columns, gap, containerWidth]
   );
 
   const rowVirtualizer = useVirtualizer({
@@ -320,6 +332,13 @@ export function ClusteredPhotoGrid({
     estimateSize: getRowHeight,
     overscan: 5,
   });
+
+  // Force re-measure when container width changes
+  useEffect(() => {
+    if (containerWidth > 0) {
+      rowVirtualizer.measure();
+    }
+  }, [containerWidth, rowVirtualizer]);
 
   // Calculate global photo index for a given position
   const getGlobalPhotoIndex = useCallback(
@@ -346,10 +365,9 @@ export function ClusteredPhotoGrid({
   return (
     <div
       ref={parentRef}
-      className={`h-[calc(100vh-3.5rem)] overflow-auto transition-opacity duration-200 ${
+      className={`min-h-0 flex-1 overflow-auto transition-opacity duration-200 ${
         isTransitioning ? "opacity-90" : "opacity-100"
       }`}
-      style={{ contain: "strict" }}
     >
       <div
         key={renderKey}
@@ -398,7 +416,7 @@ export function ClusteredPhotoGrid({
               }}
             >
               <div
-                className="grid h-full"
+                className="grid"
                 style={{
                   gridTemplateColumns: `repeat(${columns}, 1fr)`,
                   gap: `${gap}px`,
@@ -509,7 +527,7 @@ function AnimatedPhotoGridItem({
         src={photo.thumbnailUrl}
         alt={photo.alt ?? "Photo"}
         fill
-        sizes={`(max-width: 768px) ${100 / 3}vw, ${100 / 4}vw`}
+        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 16vw"
         className={`object-cover transition-opacity duration-300 ${
           isLoaded ? "opacity-100" : hasBlur ? "opacity-100" : "opacity-0"
         } ${isSelected ? "brightness-90" : ""}`}
@@ -579,7 +597,7 @@ export function SelectablePhotoGridItem({
         src={photo.thumbnailUrl}
         alt={photo.alt ?? "Photo"}
         fill
-        sizes={`(max-width: 768px) ${100 / 3}vw, ${100 / 4}vw`}
+        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 16vw"
         className={`object-cover transition-opacity duration-300 ${
           isLoaded ? "opacity-100" : hasBlur ? "opacity-100" : "opacity-0"
         } ${isSelected ? "brightness-90" : ""}`}

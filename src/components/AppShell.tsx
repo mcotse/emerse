@@ -7,6 +7,7 @@ import { useDarkMode } from "@/hooks/useDarkMode";
 import type { PhotoWithDate, Tag } from "@/lib/clustering";
 import { SearchBar } from "./SearchBar";
 import { OfflineIndicator } from "./OfflineIndicator";
+import { MobileNav } from "./MobileNav";
 
 interface AppShellProps {
   children: ReactNode;
@@ -34,7 +35,7 @@ export function AppShell({
   onSearch,
 }: AppShellProps) {
   return (
-    <div className="flex min-h-screen flex-col bg-white dark:bg-black">
+    <div className="flex h-screen flex-col overflow-hidden bg-white dark:bg-black">
       {/* Skip to main content link for keyboard users */}
       <a
         href="#main-content"
@@ -53,7 +54,7 @@ export function AppShell({
         tags={tags}
         onSearch={onSearch}
       />
-      <main id="main-content" className="flex-1" tabIndex={-1}>
+      <main id="main-content" className="flex min-h-0 flex-1 flex-col" tabIndex={-1}>
         {children}
       </main>
       <OfflineIndicator />
@@ -90,8 +91,8 @@ function Header({ onUploadClick, onTagsClick, onSharesClick, onAlbumsClick, clus
             className="hidden flex-1 sm:block sm:max-w-xs"
           />
         )}
-        <nav className="ml-auto flex items-center gap-2">
-          {/* Cluster mode switcher */}
+        <nav className="ml-auto flex items-center gap-1 sm:gap-2">
+          {/* Cluster mode switcher - visible on all screens */}
           {clusterMode && onClusterModeChange && (
             <div className="flex rounded-lg bg-gray-100 p-0.5 dark:bg-gray-800">
               <button
@@ -129,10 +130,12 @@ function Header({ onUploadClick, onTagsClick, onSharesClick, onAlbumsClick, clus
               </button>
             </div>
           )}
+
+          {/* Desktop nav buttons - hidden on mobile */}
           <button
             type="button"
             onClick={onTagsClick}
-            className="rounded-full p-2 hover:bg-gray-100 dark:hover:bg-gray-900"
+            className="hidden h-11 w-11 items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-900 sm:flex"
             aria-label="Manage tags"
           >
             <TagIcon className="h-5 w-5" />
@@ -140,7 +143,7 @@ function Header({ onUploadClick, onTagsClick, onSharesClick, onAlbumsClick, clus
           <button
             type="button"
             onClick={onAlbumsClick}
-            className="rounded-full p-2 hover:bg-gray-100 dark:hover:bg-gray-900"
+            className="hidden h-11 w-11 items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-900 sm:flex"
             aria-label="Manage albums"
           >
             <AlbumIcon className="h-5 w-5" />
@@ -148,7 +151,7 @@ function Header({ onUploadClick, onTagsClick, onSharesClick, onAlbumsClick, clus
           <button
             type="button"
             onClick={onSharesClick}
-            className="rounded-full p-2 hover:bg-gray-100 dark:hover:bg-gray-900"
+            className="hidden h-11 w-11 items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-900 sm:flex"
             aria-label="Manage shares"
           >
             <ShareIcon className="h-5 w-5" />
@@ -156,7 +159,7 @@ function Header({ onUploadClick, onTagsClick, onSharesClick, onAlbumsClick, clus
           <button
             type="button"
             onClick={onUploadClick}
-            className="rounded-full p-2 hover:bg-gray-100 dark:hover:bg-gray-900"
+            className="hidden h-11 w-11 items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-900 sm:flex"
             aria-label="Upload photos"
           >
             <UploadIcon className="h-5 w-5" />
@@ -165,7 +168,7 @@ function Header({ onUploadClick, onTagsClick, onSharesClick, onAlbumsClick, clus
             <button
               type="button"
               onClick={toggleTheme}
-              className="rounded-full p-2 hover:bg-gray-100 dark:hover:bg-gray-900"
+              className="hidden h-11 w-11 items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-900 sm:flex"
               aria-label={`Switch to ${effectiveTheme === "dark" ? "light" : "dark"} mode`}
             >
               {effectiveTheme === "dark" ? (
@@ -175,11 +178,11 @@ function Header({ onUploadClick, onTagsClick, onSharesClick, onAlbumsClick, clus
               )}
             </button>
           )}
-          <div className="relative">
+          <div className="relative hidden sm:block">
             <button
               type="button"
               onClick={() => setShowMenu(!showMenu)}
-              className="rounded-full p-2 hover:bg-gray-100 dark:hover:bg-gray-900"
+              className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-900"
               aria-label="User menu"
             >
               <UserIcon className="h-5 w-5" />
@@ -200,6 +203,14 @@ function Header({ onUploadClick, onTagsClick, onSharesClick, onAlbumsClick, clus
               </div>
             )}
           </div>
+
+          {/* Mobile nav - hamburger menu */}
+          <MobileNav
+            onUploadClick={onUploadClick}
+            onTagsClick={onTagsClick}
+            onSharesClick={onSharesClick}
+            onAlbumsClick={onAlbumsClick}
+          />
         </nav>
       </div>
     </header>
