@@ -14,6 +14,7 @@ import {
   SAMPLE_TAGS,
 } from "@/lib/clustering";
 import { TagManager } from "@/components/TagManager";
+import { SearchResults } from "@/components/SearchResults";
 import { searchPhotos, type SearchResult } from "@/lib/search";
 
 export type ClusterMode = "month" | "day";
@@ -150,7 +151,15 @@ export default function Home() {
             </div>
           </div>
         )}
-        {hasPhotos ? (
+        {searchResults ? (
+          <SearchResults
+            results={searchResults}
+            columns={columns}
+            onPhotoClick={(photo, index) => {
+              setViewerState({ isOpen: true, index });
+            }}
+          />
+        ) : hasPhotos ? (
           <>
             <ClusteredPhotoGrid
               clusters={clusters}
@@ -172,7 +181,7 @@ export default function Home() {
 
       {viewerState.isOpen && (
         <PhotoViewer
-          photos={allPhotos}
+          photos={searchResults ? searchResults.map((r) => r.photo) : allPhotos}
           initialIndex={viewerState.index}
           onClose={closeViewer}
           onTagsChange={handleTagsChange}

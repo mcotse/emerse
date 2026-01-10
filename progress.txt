@@ -673,6 +673,32 @@
 
 ---
 
+## 2026-01-10: Task 3.11 - Search Results View
+
+**Status:** Complete
+
+### What was done:
+- Created SearchResults component with result cards
+- Each result shows thumbnail and matched fields
+- Match overlay shows which fields matched (tag, camera, location, etc.)
+- Empty state with no results message
+- Click result to open photo viewer
+- Photo viewer shows search results when in search mode
+
+### Search Results Features:
+- Grid layout matching the main photo grid
+- Match badges showing field:value pairs
+- Gradient overlay for readability
+- Hover and focus states for accessibility
+- Dynamic column count based on pinch-zoom
+- Photo viewer navigation through search results
+
+### Files created/modified:
+- src/components/SearchResults.tsx - Search results grid component
+- src/app/page.tsx - Integrated search results view
+
+---
+
 ### Remaining Work
 - [ ] 2.4 Server-side multi-resolution generation
 - [ ] 3.5 Location-based clustering
