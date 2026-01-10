@@ -230,6 +230,9 @@ interface ClusteredPhotoGridProps {
   gap?: number;
   onPhotoClick?: (photo: PhotoWithDate, globalIndex: number) => void;
   enableTransitions?: boolean;
+  isSelectionMode?: boolean;
+  selectedIds?: Set<string>;
+  onToggleSelection?: (photoId: string) => void;
 }
 
 export function ClusteredPhotoGrid({
@@ -238,6 +241,9 @@ export function ClusteredPhotoGrid({
   gap = 2,
   onPhotoClick,
   enableTransitions = true,
+  isSelectionMode = false,
+  selectedIds = new Set(),
+  onToggleSelection,
 }: ClusteredPhotoGridProps) {
   const parentRef = useRef<HTMLDivElement>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -408,6 +414,9 @@ export function ClusteredPhotoGrid({
                       onClick={() => onPhotoClick?.(photo, globalIndex)}
                       animationDelay={animationDelay + cellIndex * 20}
                       enableAnimation={enableTransitions}
+                      isSelectionMode={isSelectionMode}
+                      isSelected={selectedIds.has(photo.id)}
+                      onSelect={() => onToggleSelection?.(photo.id)}
                     />
                   );
                 })}
@@ -459,6 +468,9 @@ interface AnimatedPhotoGridItemProps {
   onClick?: () => void;
   animationDelay?: number;
   enableAnimation?: boolean;
+  isSelectionMode?: boolean;
+  isSelected?: boolean;
+  onSelect?: () => void;
 }
 
 function AnimatedPhotoGridItem({
@@ -466,19 +478,31 @@ function AnimatedPhotoGridItem({
   onClick,
   animationDelay = 0,
   enableAnimation = true,
+  isSelectionMode = false,
+  isSelected = false,
+  onSelect,
 }: AnimatedPhotoGridItemProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const hasBlur = Boolean(photo.blurDataURL);
 
+  const handleClick = () => {
+    if (isSelectionMode && onSelect) {
+      onSelect();
+    } else {
+      onClick?.();
+    }
+  };
+
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={handleClick}
       className={`relative aspect-square overflow-hidden bg-gray-100 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 dark:bg-gray-900 dark:focus:ring-white ${
         enableAnimation ? "animate-photo-scale-in" : ""
-      }`}
+      } ${isSelected ? "ring-2 ring-blue-500 ring-offset-2" : ""}`}
       style={enableAnimation ? { animationDelay: `${animationDelay}ms` } : undefined}
       aria-label={photo.alt || "View photo"}
+      aria-pressed={isSelectionMode ? isSelected : undefined}
     >
       {!isLoaded && !hasBlur && <PhotoSkeleton />}
       <Image
@@ -488,11 +512,95 @@ function AnimatedPhotoGridItem({
         sizes={`(max-width: 768px) ${100 / 3}vw, ${100 / 4}vw`}
         className={`object-cover transition-opacity duration-300 ${
           isLoaded ? "opacity-100" : hasBlur ? "opacity-100" : "opacity-0"
-        }`}
+        } ${isSelected ? "brightness-90" : ""}`}
         placeholder={hasBlur ? "blur" : "empty"}
         blurDataURL={photo.blurDataURL}
         onLoad={() => setIsLoaded(true)}
       />
+      {/* Selection indicator */}
+      {isSelectionMode && (
+        <div
+          className={`absolute left-2 top-2 flex h-6 w-6 items-center justify-center rounded-full border-2 transition-colors ${
+            isSelected
+              ? "border-blue-500 bg-blue-500 text-white"
+              : "border-white bg-black/30 text-transparent"
+          }`}
+        >
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+      )}
+    </button>
+  );
+}
+
+/**
+ * Selectable photo grid item for selection mode
+ */
+export interface SelectablePhotoGridItemProps {
+  photo: Photo;
+  onClick?: () => void;
+  isSelectionMode?: boolean;
+  isSelected?: boolean;
+  onSelect?: () => void;
+}
+
+export function SelectablePhotoGridItem({
+  photo,
+  onClick,
+  isSelectionMode = false,
+  isSelected = false,
+  onSelect,
+}: SelectablePhotoGridItemProps) {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const hasBlur = Boolean(photo.blurDataURL);
+
+  const handleClick = () => {
+    if (isSelectionMode && onSelect) {
+      onSelect();
+    } else {
+      onClick?.();
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      className={`relative aspect-square overflow-hidden bg-gray-100 transition-all duration-300 ease-out focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 dark:bg-gray-900 dark:focus:ring-white ${
+        isSelected ? "ring-2 ring-blue-500 ring-offset-2" : ""
+      }`}
+      aria-label={photo.alt || "View photo"}
+      aria-pressed={isSelectionMode ? isSelected : undefined}
+    >
+      {!isLoaded && !hasBlur && <PhotoSkeleton />}
+      <Image
+        src={photo.thumbnailUrl}
+        alt={photo.alt ?? "Photo"}
+        fill
+        sizes={`(max-width: 768px) ${100 / 3}vw, ${100 / 4}vw`}
+        className={`object-cover transition-opacity duration-300 ${
+          isLoaded ? "opacity-100" : hasBlur ? "opacity-100" : "opacity-0"
+        } ${isSelected ? "brightness-90" : ""}`}
+        placeholder={hasBlur ? "blur" : "empty"}
+        blurDataURL={photo.blurDataURL}
+        onLoad={() => setIsLoaded(true)}
+      />
+      {/* Selection indicator */}
+      {isSelectionMode && (
+        <div
+          className={`absolute left-2 top-2 flex h-6 w-6 items-center justify-center rounded-full border-2 transition-colors ${
+            isSelected
+              ? "border-blue-500 bg-blue-500 text-white"
+              : "border-white bg-black/30 text-transparent"
+          }`}
+        >
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+      )}
     </button>
   );
 }
