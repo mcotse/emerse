@@ -58,3 +58,37 @@
 1. Task 1.2: PWA configuration (manifest, service worker)
 2. Task 1.5: Authentication setup
 3. Task 1.4: Basic responsive layout/shell
+
+---
+
+## 2026-01-10: Task 1.2 - PWA Configuration
+
+**Status:** Complete
+
+### What was done:
+- Created web app manifest with app metadata and icons
+- Added PWA meta tags to layout (apple-web-app, theme-color, viewport)
+- Configured Serwist for service worker with runtime caching
+- Created service worker with precaching and navigation preload
+- Added ServiceWorkerRegistration component for client-side registration
+- Created placeholder SVG icons (192x192, 512x512)
+
+### PWA Features Enabled:
+- Installable on home screen (mobile/desktop)
+- Standalone display mode (no browser chrome)
+- Service worker for offline caching (production only)
+- Apple Web App capable
+- Optimized viewport for mobile
+
+### Files created/modified:
+- public/manifest.json - Web app manifest
+- public/icons/icon-192.svg, icon-512.svg - App icons
+- src/app/sw.ts - Service worker source
+- src/components/ServiceWorkerRegistration.tsx - SW registration
+- src/app/layout.tsx - Added PWA metadata and SW component
+- next.config.ts - Serwist configuration
+
+### Next priorities:
+1. Task 1.5: Authentication setup
+2. Task 1.4: Basic responsive layout/shell
+3. Task 2.1: S3 bucket setup (manual task)
