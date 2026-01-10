@@ -69,7 +69,45 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const shareId = searchParams.get("id");
+  const listMode = searchParams.get("list");
 
+  // List all shares for current user
+  if (listMode === "true") {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const userShares: Array<{
+      id: string;
+      photoIds: string[];
+      createdAt: string;
+      expiresAt?: string;
+      viewCount: number;
+      expired: boolean;
+    }> = [];
+
+    for (const [id, share] of shares.entries()) {
+      if (share.userId === session.user.id) {
+        const expired = share.expiresAt ? new Date() > share.expiresAt : false;
+        userShares.push({
+          id,
+          photoIds: share.photoIds,
+          createdAt: share.createdAt.toISOString(),
+          expiresAt: share.expiresAt?.toISOString(),
+          viewCount: share.viewCount,
+          expired,
+        });
+      }
+    }
+
+    // Sort by creation date (newest first)
+    userShares.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    return NextResponse.json({ shares: userShares });
+  }
+
+  // Get single share by ID
   if (!shareId) {
     return NextResponse.json({ error: "Share ID required" }, { status: 400 });
   }
@@ -93,4 +131,34 @@ export async function GET(request: NextRequest) {
     createdAt: share.createdAt.toISOString(),
     viewCount: share.viewCount,
   });
+}
+
+export async function DELETE(request: NextRequest) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { searchParams } = new URL(request.url);
+  const shareId = searchParams.get("id");
+
+  if (!shareId) {
+    return NextResponse.json({ error: "Share ID required" }, { status: 400 });
+  }
+
+  const share = shares.get(shareId);
+
+  if (!share) {
+    return NextResponse.json({ error: "Share not found" }, { status: 404 });
+  }
+
+  // Check ownership
+  if (share.userId !== session.user.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  }
+
+  shares.delete(shareId);
+
+  return NextResponse.json({ success: true });
 }
