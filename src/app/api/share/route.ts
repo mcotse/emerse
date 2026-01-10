@@ -2,8 +2,31 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { nanoid } from "nanoid";
 
+// Gallery appearance customization options
+export interface GallerySettings {
+  theme: "dark" | "light" | "auto";
+  layout: "grid" | "masonry" | "slideshow";
+  columns: 2 | 3 | 4 | 6;
+  showTitle: boolean;
+  title?: string;
+  showDescription: boolean;
+  description?: string;
+  showWatermark: boolean;
+  allowDownload: boolean;
+  accentColor?: string;
+}
+
+const DEFAULT_GALLERY_SETTINGS: GallerySettings = {
+  theme: "dark",
+  layout: "grid",
+  columns: 3,
+  showTitle: false,
+  showDescription: false,
+  showWatermark: true,
+  allowDownload: false,
+};
+
 // In-memory store for shares (will be replaced with database)
-// Structure: { shareId: { userId, photoIds, createdAt, expiresAt? } }
 const shares = new Map<
   string,
   {
@@ -12,6 +35,7 @@ const shares = new Map<
     createdAt: Date;
     expiresAt?: Date;
     viewCount: number;
+    settings: GallerySettings;
   }
 >();
 
@@ -23,7 +47,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { photoIds, expiresInDays } = await request.json();
+    const { photoIds, expiresInDays, settings: customSettings } = await request.json();
 
     if (!photoIds || !Array.isArray(photoIds) || photoIds.length === 0) {
       return NextResponse.json(
@@ -42,6 +66,12 @@ export async function POST(request: NextRequest) {
       expiresAt.setDate(expiresAt.getDate() + expiresInDays);
     }
 
+    // Merge custom settings with defaults
+    const settings: GallerySettings = {
+      ...DEFAULT_GALLERY_SETTINGS,
+      ...customSettings,
+    };
+
     // Store share
     shares.set(shareId, {
       userId: session.user.id,
@@ -49,6 +79,7 @@ export async function POST(request: NextRequest) {
       createdAt: new Date(),
       expiresAt,
       viewCount: 0,
+      settings,
     });
 
     const shareUrl = `${process.env.NEXT_PUBLIC_URL || "http://localhost:3000"}/share/${shareId}`;
@@ -130,6 +161,7 @@ export async function GET(request: NextRequest) {
     photoIds: share.photoIds,
     createdAt: share.createdAt.toISOString(),
     viewCount: share.viewCount,
+    settings: share.settings,
   });
 }
 
