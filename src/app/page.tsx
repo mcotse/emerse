@@ -11,7 +11,9 @@ import {
   generateMockPhotosWithDates,
   clusterByMonth,
   clusterByDay,
+  SAMPLE_TAGS,
 } from "@/lib/clustering";
+import { TagManager } from "@/components/TagManager";
 
 export type ClusterMode = "month" | "day";
 
@@ -27,8 +29,10 @@ export default function Home() {
     index: number;
   }>({ isOpen: false, index: 0 });
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [isTagManagerOpen, setIsTagManagerOpen] = useState(false);
   const [clusterMode, setClusterMode] = useState<ClusterMode>("month");
   const [photos, setPhotos] = useState<PhotoWithDate[]>(INITIAL_PHOTOS);
+  const [availableTags, setAvailableTags] = useState<Tag[]>(SAMPLE_TAGS);
 
   const { zoom, containerRef, isPinching } = usePinchZoom({
     minZoom: 0.5,
@@ -48,6 +52,39 @@ export default function Home() {
       )
     );
   }, []);
+
+  // Handle global tag list changes (from tag manager)
+  const handleAvailableTagsChange = useCallback(
+    (newTags: Tag[]) => {
+      // Find deleted tags
+      const deletedTagIds = availableTags
+        .filter((t) => !newTags.some((nt) => nt.id === t.id))
+        .map((t) => t.id);
+
+      // Remove deleted tags from photos
+      if (deletedTagIds.length > 0) {
+        setPhotos((prev) =>
+          prev.map((photo) => ({
+            ...photo,
+            tags: photo.tags?.filter((t) => !deletedTagIds.includes(t.id)),
+          }))
+        );
+      }
+
+      // Update any existing tags on photos with new data (e.g., name/color changes)
+      setPhotos((prev) =>
+        prev.map((photo) => ({
+          ...photo,
+          tags: photo.tags?.map(
+            (pt) => newTags.find((nt) => nt.id === pt.id) || pt
+          ),
+        }))
+      );
+
+      setAvailableTags(newTags);
+    },
+    [availableTags]
+  );
 
   // Cluster photos based on selected mode
   const clusters = useMemo(() => {
@@ -71,6 +108,7 @@ export default function Home() {
   return (
     <AppShell
       onUploadClick={() => setIsUploadOpen(true)}
+      onTagsClick={() => setIsTagManagerOpen(true)}
       clusterMode={clusterMode}
       onClusterModeChange={setClusterMode}
     >
@@ -101,6 +139,7 @@ export default function Home() {
           initialIndex={viewerState.index}
           onClose={closeViewer}
           onTagsChange={handleTagsChange}
+          availableTags={availableTags}
         />
       )}
 
@@ -111,6 +150,13 @@ export default function Home() {
           // TODO: Refresh photo list
           console.log("Upload complete");
         }}
+      />
+
+      <TagManager
+        isOpen={isTagManagerOpen}
+        onClose={() => setIsTagManagerOpen(false)}
+        tags={availableTags}
+        onTagsChange={handleAvailableTagsChange}
       />
     </AppShell>
   );

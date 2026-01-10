@@ -13,6 +13,7 @@ interface PhotoViewerProps {
   initialIndex: number;
   onClose: () => void;
   onTagsChange?: (photoId: string, tags: Tag[]) => void;
+  availableTags?: Tag[];
 }
 
 interface ZoomState {
@@ -26,6 +27,7 @@ export function PhotoViewer({
   initialIndex,
   onClose,
   onTagsChange,
+  availableTags,
 }: PhotoViewerProps) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -335,6 +337,7 @@ export function PhotoViewer({
         isOpen={showInfo}
         onClose={() => setShowInfo(false)}
         onTagsChange={onTagsChange}
+        availableTags={availableTags}
       />
     </div>
   );
@@ -440,9 +443,10 @@ interface MetadataPanelProps {
   isOpen: boolean;
   onClose: () => void;
   onTagsChange?: (photoId: string, tags: Tag[]) => void;
+  availableTags?: Tag[];
 }
 
-function MetadataPanel({ photo, isOpen, onClose, onTagsChange }: MetadataPanelProps) {
+function MetadataPanel({ photo, isOpen, onClose, onTagsChange, availableTags }: MetadataPanelProps) {
   if (!isOpen) return null;
 
   const formatFileSize = (bytes: number) => {
@@ -576,6 +580,7 @@ function MetadataPanel({ photo, isOpen, onClose, onTagsChange }: MetadataPanelPr
           <TagInput
             tags={photo.tags || []}
             onTagsChange={(tags) => onTagsChange?.(photo.id, tags)}
+            availableTags={availableTags}
           />
         </div>
       </div>

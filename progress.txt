@@ -616,6 +616,35 @@
 
 ---
 
+## 2026-01-10: Task 3.9 - Tag Management (Create, Edit, Delete)
+
+**Status:** Complete
+
+### What was done:
+- Created TagManager modal component with full CRUD operations
+- Added tag button to header for quick access
+- Implemented create new tag with random color assignment
+- Added inline editing for tag names and colors
+- Color picker with predefined color palette
+- Delete tags with automatic cleanup from photos
+- Tag changes propagate to all photos using that tag
+
+### Tag Manager Features:
+- Modal dialog accessible from header
+- Create tags with name input + Enter key
+- Edit tags inline with color picker
+- Delete tags with confirmation
+- Deleting a tag removes it from all photos
+- Editing tag name/color updates all photos
+
+### Files created/modified:
+- src/components/TagManager.tsx - New tag management modal
+- src/components/AppShell.tsx - Added tag button to header
+- src/components/PhotoViewer.tsx - Pass availableTags to TagInput
+- src/app/page.tsx - Added tag manager state and handlers
+
+---
+
 ### Remaining Work
 - [ ] 2.4 Server-side multi-resolution generation
 - [ ] 3.5 Location-based clustering

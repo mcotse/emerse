@@ -8,6 +8,7 @@ import { useDarkMode } from "@/hooks/useDarkMode";
 interface AppShellProps {
   children: ReactNode;
   onUploadClick?: () => void;
+  onTagsClick?: () => void;
   clusterMode?: ClusterMode;
   onClusterModeChange?: (mode: ClusterMode) => void;
 }
@@ -15,6 +16,7 @@ interface AppShellProps {
 export function AppShell({
   children,
   onUploadClick,
+  onTagsClick,
   clusterMode,
   onClusterModeChange,
 }: AppShellProps) {
@@ -22,6 +24,7 @@ export function AppShell({
     <div className="flex min-h-screen flex-col bg-white dark:bg-black">
       <Header
         onUploadClick={onUploadClick}
+        onTagsClick={onTagsClick}
         clusterMode={clusterMode}
         onClusterModeChange={onClusterModeChange}
       />
@@ -32,11 +35,12 @@ export function AppShell({
 
 interface HeaderProps {
   onUploadClick?: () => void;
+  onTagsClick?: () => void;
   clusterMode?: ClusterMode;
   onClusterModeChange?: (mode: ClusterMode) => void;
 }
 
-function Header({ onUploadClick, clusterMode, onClusterModeChange }: HeaderProps) {
+function Header({ onUploadClick, onTagsClick, clusterMode, onClusterModeChange }: HeaderProps) {
   const { data: session } = useSession();
   const [showMenu, setShowMenu] = useState(false);
   const { effectiveTheme, toggleTheme, mounted } = useDarkMode();
@@ -73,6 +77,14 @@ function Header({ onUploadClick, clusterMode, onClusterModeChange }: HeaderProps
               </button>
             </div>
           )}
+          <button
+            type="button"
+            onClick={onTagsClick}
+            className="rounded-full p-2 hover:bg-gray-100 dark:hover:bg-gray-900"
+            aria-label="Manage tags"
+          >
+            <TagIcon className="h-5 w-5" />
+          </button>
           <button
             type="button"
             onClick={onUploadClick}
@@ -198,6 +210,26 @@ function MoonIcon({ className }: { className?: string }) {
         strokeLinejoin="round"
         d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z"
       />
+    </svg>
+  );
+}
+
+function TagIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+      className={className}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 0 0 9.568 3Z"
+      />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6 6h.008v.008H6V6Z" />
     </svg>
   );
 }
