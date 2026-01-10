@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { AppShell } from "@/components/AppShell";
 import { ClusteredPhotoGrid } from "@/components/PhotoGrid";
 import { PhotoViewer } from "@/components/PhotoViewer";
 import { UploadModal } from "@/components/UploadModal";
 import { usePinchZoom, zoomToColumns } from "@/hooks/usePinchZoom";
+import type { PhotoWithDate, Tag } from "@/lib/clustering";
 import {
   generateMockPhotosWithDates,
   clusterByMonth,
@@ -14,9 +15,9 @@ import {
 
 export type ClusterMode = "month" | "day";
 
-// Mock photos with dates for development - will be replaced with real data
+// Initial mock photos for development - will be replaced with real data
 // Using 500 photos distributed across the last year to test clustering
-const MOCK_PHOTOS = generateMockPhotosWithDates(500);
+const INITIAL_PHOTOS = generateMockPhotosWithDates(500);
 
 const COLUMN_OPTIONS = [2, 3, 4, 6, 8];
 
@@ -27,6 +28,7 @@ export default function Home() {
   }>({ isOpen: false, index: 0 });
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [clusterMode, setClusterMode] = useState<ClusterMode>("month");
+  const [photos, setPhotos] = useState<PhotoWithDate[]>(INITIAL_PHOTOS);
 
   const { zoom, containerRef, isPinching } = usePinchZoom({
     minZoom: 0.5,
@@ -36,9 +38,16 @@ export default function Home() {
 
   const columns = zoomToColumns(zoom, COLUMN_OPTIONS);
 
-  // TODO: Replace with real photo data from database
-  const photos = MOCK_PHOTOS;
   const hasPhotos = photos.length > 0;
+
+  // Handle tag changes for a photo
+  const handleTagsChange = useCallback((photoId: string, newTags: Tag[]) => {
+    setPhotos((prev) =>
+      prev.map((photo) =>
+        photo.id === photoId ? { ...photo, tags: newTags } : photo
+      )
+    );
+  }, []);
 
   // Cluster photos based on selected mode
   const clusters = useMemo(() => {
@@ -91,6 +100,7 @@ export default function Home() {
           photos={allPhotos}
           initialIndex={viewerState.index}
           onClose={closeViewer}
+          onTagsChange={handleTagsChange}
         />
       )}
 

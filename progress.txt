@@ -585,6 +585,37 @@
 - [x] 7.1 Generate shareable portfolio links
 - [x] 7.2 Public gallery view (no auth)
 
+---
+
+## 2026-01-10: Task 3.8 - Manual Tagging UI on Photos
+
+**Status:** Complete
+
+### What was done:
+- Added Tag interface to clustering.ts with id, name, and optional color
+- Created TagInput component with autocomplete suggestions
+- Added tags section to metadata panel in PhotoViewer
+- Implemented add/remove tag functionality
+- Created sample tags for development (Landscape, Portrait, Street, etc.)
+- Added tag state management in main page component
+- Tags displayed as colored chips with remove button
+
+### Tagging Features:
+- Add existing tags from autocomplete dropdown
+- Create new custom tags with random colors
+- Remove tags with X button
+- Keyboard navigation (arrows, Enter, Backspace)
+- Tags persist in photo state
+- Mock photos randomly assigned 0-3 tags for testing
+
+### Files created/modified:
+- src/lib/clustering.ts - Added Tag interface, SAMPLE_TAGS, TAG_COLORS
+- src/components/TagInput.tsx - New tag input component
+- src/components/PhotoViewer.tsx - Added tags section to metadata panel
+- src/app/page.tsx - Added photo state and handleTagsChange
+
+---
+
 ### Remaining Work
 - [ ] 2.4 Server-side multi-resolution generation
 - [ ] 3.5 Location-based clustering

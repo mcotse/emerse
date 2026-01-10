@@ -1,5 +1,11 @@
 import { Photo } from "@/components/PhotoGrid";
 
+export interface Tag {
+  id: string;
+  name: string;
+  color?: string;
+}
+
 export interface PhotoMetadata {
   takenAt?: Date;
   camera?: string;
@@ -14,6 +20,7 @@ export interface PhotoMetadata {
     name?: string;
   };
   fileSize?: number;
+  tags?: Tag[];
 }
 
 export interface PhotoWithDate extends Photo, PhotoMetadata {}
@@ -192,6 +199,21 @@ const APERTURES = ["f/1.4", "f/1.8", "f/2.8", "f/4", "f/5.6", "f/8", "f/11"];
 const SHUTTER_SPEEDS = ["1/2000", "1/1000", "1/500", "1/250", "1/125", "1/60"];
 const ISOS = [100, 200, 400, 800, 1600, 3200];
 const FOCAL_LENGTHS = ["24mm", "35mm", "50mm", "85mm", "135mm", "200mm"];
+const TAG_COLORS = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#3b82f6", "#8b5cf6", "#ec4899"];
+const SAMPLE_TAGS: Tag[] = [
+  { id: "tag-1", name: "Landscape", color: "#22c55e" },
+  { id: "tag-2", name: "Portrait", color: "#3b82f6" },
+  { id: "tag-3", name: "Street", color: "#f97316" },
+  { id: "tag-4", name: "Nature", color: "#22c55e" },
+  { id: "tag-5", name: "Travel", color: "#8b5cf6" },
+  { id: "tag-6", name: "Food", color: "#ef4444" },
+  { id: "tag-7", name: "Architecture", color: "#eab308" },
+  { id: "tag-8", name: "Black & White", color: "#6b7280" },
+  { id: "tag-9", name: "Macro", color: "#ec4899" },
+  { id: "tag-10", name: "Wildlife", color: "#22c55e" },
+];
+
+export { SAMPLE_TAGS, TAG_COLORS };
 
 /**
  * Generate mock photos with dates and metadata for testing.
@@ -209,6 +231,11 @@ export function generateMockPhotosWithDates(count: number): PhotoWithDate[] {
     // Generate random metadata
     const hasMetadata = Math.random() > 0.2; // 80% have metadata
 
+    // Randomly assign 0-3 tags to each photo
+    const tagCount = Math.floor(Math.random() * 4);
+    const shuffledTags = [...SAMPLE_TAGS].sort(() => Math.random() - 0.5);
+    const photoTags = shuffledTags.slice(0, tagCount);
+
     photos.push({
       id: `photo-${i}`,
       thumbnailUrl: `https://picsum.photos/seed/${i}/400/400`,
@@ -217,6 +244,7 @@ export function generateMockPhotosWithDates(count: number): PhotoWithDate[] {
       alt: `Photo ${i + 1}`,
       blurDataURL: generateBlurPlaceholder(i),
       takenAt,
+      tags: photoTags.length > 0 ? photoTags : undefined,
       ...(hasMetadata && {
         camera: CAMERAS[Math.floor(Math.random() * CAMERAS.length)],
         lens: LENSES[Math.floor(Math.random() * LENSES.length)],

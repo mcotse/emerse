@@ -3,7 +3,8 @@
 import Image from "next/image";
 import { useCallback, useEffect, useState, useRef } from "react";
 import type { Photo } from "./PhotoGrid";
-import type { PhotoMetadata } from "@/lib/clustering";
+import type { PhotoMetadata, Tag } from "@/lib/clustering";
+import { TagInput } from "./TagInput";
 
 type PhotoWithMetadata = Photo & Partial<PhotoMetadata>;
 
@@ -11,6 +12,7 @@ interface PhotoViewerProps {
   photos: PhotoWithMetadata[];
   initialIndex: number;
   onClose: () => void;
+  onTagsChange?: (photoId: string, tags: Tag[]) => void;
 }
 
 interface ZoomState {
@@ -23,6 +25,7 @@ export function PhotoViewer({
   photos,
   initialIndex,
   onClose,
+  onTagsChange,
 }: PhotoViewerProps) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -327,7 +330,12 @@ export function PhotoViewer({
       )}
 
       {/* Metadata panel */}
-      <MetadataPanel photo={currentPhoto} isOpen={showInfo} onClose={() => setShowInfo(false)} />
+      <MetadataPanel
+        photo={currentPhoto}
+        isOpen={showInfo}
+        onClose={() => setShowInfo(false)}
+        onTagsChange={onTagsChange}
+      />
     </div>
   );
 }
@@ -431,9 +439,10 @@ interface MetadataPanelProps {
   photo: PhotoWithMetadata;
   isOpen: boolean;
   onClose: () => void;
+  onTagsChange?: (photoId: string, tags: Tag[]) => void;
 }
 
-function MetadataPanel({ photo, isOpen, onClose }: MetadataPanelProps) {
+function MetadataPanel({ photo, isOpen, onClose, onTagsChange }: MetadataPanelProps) {
   if (!isOpen) return null;
 
   const formatFileSize = (bytes: number) => {
@@ -558,6 +567,17 @@ function MetadataPanel({ photo, isOpen, onClose }: MetadataPanelProps) {
             </p>
           </div>
         )}
+
+        {/* Tags */}
+        <div>
+          <h3 className="mb-2 text-xs font-medium uppercase tracking-wider text-gray-400">
+            Tags
+          </h3>
+          <TagInput
+            tags={photo.tags || []}
+            onTagsChange={(tags) => onTagsChange?.(photo.id, tags)}
+          />
+        </div>
       </div>
     </div>
   );
