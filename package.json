@@ -28,7 +28,8 @@
     "prisma": "^7.2.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
-    "serwist": "^9.5.0"
+    "serwist": "^9.5.0",
+    "sharp": "^0.34.5"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.3",
@@ -37,6 +38,7 @@
     "@types/node": "^25.0.5",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
+    "@types/sharp": "^0.32.0",
     "autoprefixer": "^10.4.23",
     "eslint": "^9.39.2",
     "eslint-config-next": "^16.1.1",

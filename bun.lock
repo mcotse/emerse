@@ -19,6 +19,7 @@
         "react": "^19.2.3",
         "react-dom": "^19.2.3",
         "serwist": "^9.5.0",
+        "sharp": "^0.34.5",
       },
       "devDependencies": {
         "@eslint/eslintrc": "^3.3.3",
@@ -27,6 +28,7 @@
         "@types/node": "^25.0.5",
         "@types/react": "^19.2.7",
         "@types/react-dom": "^19.2.3",
+        "@types/sharp": "^0.32.0",
         "autoprefixer": "^10.4.23",
         "eslint": "^9.39.2",
         "eslint-config-next": "^16.1.1",
@@ -468,6 +470,8 @@
     "@types/react": ["@types/react@19.2.8", "", { "dependencies": { "csstype": "^3.2.2" } }, "sha512-3MbSL37jEchWZz2p2mjntRZtPt837ij10ApxKfgmXCTuHWagYg7iA5bqPw6C8BMPfwidlvfPI/fxOc42HLhcyg=="],
 
     "@types/react-dom": ["@types/react-dom@19.2.3", "", { "peerDependencies": { "@types/react": "^19.2.0" } }, "sha512-jp2L/eY6fn+KgVVQAOqYItbF0VY/YApe5Mz2F0aykSO8gx31bYCZyvSeYxCHKvzHG5eZjc+zyaS5BrBWya2+kQ=="],
+
+    "@types/sharp": ["@types/sharp@0.32.0", "", { "dependencies": { "sharp": "*" } }, "sha512-OOi3kL+FZDnPhVzsfD37J88FNeZh6gQsGcLc95NbeURRGvmSjeXiDcyWzF2o3yh/gQAUn2uhh/e+CPCa5nwAxw=="],
 
     "@types/trusted-types": ["@types/trusted-types@2.0.7", "", {}, "sha512-ScaPdn1dQczgbl0QFTeTOmVHFULt394XJgOQNoyVhZ6r2vLnMLJfBPd53SB52T/3G36VI1/g2MZaX0cwDuXsfw=="],
 
