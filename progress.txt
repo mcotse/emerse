@@ -1,0 +1,30 @@
+# Emerse Development Progress
+
+## 2026-01-10: Task 1.1 - Project Setup (Foundation)
+
+**Status:** Complete
+
+### What was done:
+- Initialized Next.js 16 with App Router
+- Set up TypeScript with strict mode
+- Configured Tailwind CSS v4 (CSS-based config)
+- Set up ESLint 9 with TypeScript support
+- Configured Playwright for e2e testing
+- Created basic app shell with layout and homepage
+- Established all feedback loops:
+  - `npm run typecheck` - TypeScript checking
+  - `npm run lint` - ESLint
+  - `npm run test` - Playwright tests
+
+### Files created:
+- src/app/layout.tsx - Root layout
+- src/app/page.tsx - Homepage
+- src/app/globals.css - Tailwind imports
+- tests/smoke.spec.ts - Basic smoke test
+- tsconfig.json, eslint.config.mjs, playwright.config.ts
+- .gitignore, next.config.ts, next-env.d.ts
+
+### Next priorities:
+1. Task 1.2: PWA configuration (manifest, service worker)
+2. Task 1.6: Database schema design
+3. Task 1.5: Authentication setup
