@@ -1,5 +1,9 @@
+"use client";
+
+import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { PhotoGrid, Photo } from "@/components/PhotoGrid";
+import { PhotoViewer } from "@/components/PhotoViewer";
 
 // Mock photos for development - will be replaced with real data
 const MOCK_PHOTOS: Photo[] = Array.from({ length: 24 }).map((_, i) => ({
@@ -11,9 +15,22 @@ const MOCK_PHOTOS: Photo[] = Array.from({ length: 24 }).map((_, i) => ({
 }));
 
 export default function Home() {
+  const [viewerState, setViewerState] = useState<{
+    isOpen: boolean;
+    index: number;
+  }>({ isOpen: false, index: 0 });
+
   // TODO: Replace with real photo data from database
   const photos = MOCK_PHOTOS;
   const hasPhotos = photos.length > 0;
+
+  function openViewer(index: number) {
+    setViewerState({ isOpen: true, index });
+  }
+
+  function closeViewer() {
+    setViewerState({ isOpen: false, index: 0 });
+  }
 
   return (
     <AppShell>
@@ -21,15 +38,20 @@ export default function Home() {
         <PhotoGrid
           photos={photos}
           columns={3}
-          onPhotoClick={(photo) => {
-            // TODO: Open photo viewer
-            console.log("Clicked photo:", photo.id);
-          }}
+          onPhotoClick={(_, index) => openViewer(index)}
         />
       ) : (
         <div className="p-4">
           <EmptyState />
         </div>
+      )}
+
+      {viewerState.isOpen && (
+        <PhotoViewer
+          photos={photos}
+          initialIndex={viewerState.index}
+          onClose={closeViewer}
+        />
       )}
     </AppShell>
   );

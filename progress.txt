@@ -190,3 +190,35 @@
 1. Task 5.1: Full-screen photo viewer modal
 2. Task 4.2: Pinch-to-zoom gesture detection
 3. Task 2.2: Image upload API endpoint
+
+---
+
+## 2026-01-10: Task 5.1 - Full-screen Photo Viewer Modal
+
+**Status:** Complete
+
+### What was done:
+- Created PhotoViewer component for full-screen photo viewing
+- Implemented swipe navigation (touch) between photos
+- Added keyboard navigation (left/right arrows, Escape to close)
+- Added navigation buttons for desktop users
+- Photo counter showing current position
+- Body scroll lock when viewer is open
+
+### PhotoViewer Features:
+- Full-screen modal with black background
+- Swipe left/right on mobile to navigate
+- Arrow keys for keyboard navigation
+- Close button and Escape key to exit
+- Previous/next buttons on desktop
+- Counter badge (e.g., "3 / 24")
+- Higher resolution images in viewer (1600px)
+
+### Files created/modified:
+- src/components/PhotoViewer.tsx - Photo viewer modal
+- src/app/page.tsx - Added viewer state and integration
+
+### Next priorities:
+1. Task 4.2: Pinch-to-zoom gesture detection
+2. Task 2.2: Image upload API endpoint
+3. Task 3.2: Virtualized scrolling for performance
