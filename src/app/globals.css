@@ -1,1 +1,60 @@
 @import "tailwindcss";
+
+/* Cluster transition animations */
+@keyframes cluster-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes header-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes photo-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-cluster-fade-in {
+  animation: cluster-fade-in 0.25s ease-out forwards;
+  opacity: 0;
+}
+
+.animate-header-slide-in {
+  animation: header-slide-in 0.3s ease-out forwards;
+}
+
+.animate-photo-scale-in {
+  animation: photo-scale-in 0.2s ease-out forwards;
+  opacity: 0;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  .animate-cluster-fade-in,
+  .animate-header-slide-in,
+  .animate-photo-scale-in {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}

@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useRef, useState, useCallback, useMemo } from "react";
+import { useRef, useState, useCallback, useMemo, useEffect } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { PhotoCluster, PhotoWithDate } from "@/lib/clustering";
 
@@ -229,6 +229,7 @@ interface ClusteredPhotoGridProps {
   columns?: number;
   gap?: number;
   onPhotoClick?: (photo: PhotoWithDate, globalIndex: number) => void;
+  enableTransitions?: boolean;
 }
 
 export function ClusteredPhotoGrid({
@@ -236,8 +237,34 @@ export function ClusteredPhotoGrid({
   columns = 3,
   gap = 2,
   onPhotoClick,
+  enableTransitions = true,
 }: ClusteredPhotoGridProps) {
   const parentRef = useRef<HTMLDivElement>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [renderKey, setRenderKey] = useState(0);
+  const prevClustersRef = useRef<PhotoCluster[]>(clusters);
+
+  // Detect cluster changes and trigger transition
+  useEffect(() => {
+    const prevClusters = prevClustersRef.current;
+    const hasChanged =
+      prevClusters.length !== clusters.length ||
+      prevClusters.some((c, i) => c.label !== clusters[i]?.label);
+
+    if (hasChanged && enableTransitions) {
+      setIsTransitioning(true);
+      // Reset scroll position for new cluster mode
+      if (parentRef.current) {
+        parentRef.current.scrollTop = 0;
+      }
+      // Increment render key to force re-render with fresh animations
+      setRenderKey((k) => k + 1);
+      // End transition after animation completes
+      const timer = setTimeout(() => setIsTransitioning(false), 300);
+      return () => clearTimeout(timer);
+    }
+    prevClustersRef.current = clusters;
+  }, [clusters, enableTransitions]);
 
   // Build flat list of rows (headers + photo rows)
   const rows = useMemo(() => {
@@ -304,13 +331,22 @@ export function ClusteredPhotoGrid({
     return null;
   }
 
+  // Calculate staggered animation delay based on row index
+  const getAnimationDelay = (index: number) => {
+    if (!enableTransitions) return 0;
+    return Math.min(index * 30, 300); // Cap at 300ms max delay
+  };
+
   return (
     <div
       ref={parentRef}
-      className="h-[calc(100vh-3.5rem)] overflow-auto"
+      className={`h-[calc(100vh-3.5rem)] overflow-auto transition-opacity duration-200 ${
+        isTransitioning ? "opacity-90" : "opacity-100"
+      }`}
       style={{ contain: "strict" }}
     >
       <div
+        key={renderKey}
         style={{
           height: `${rowVirtualizer.getTotalSize()}px`,
           width: "100%",
@@ -319,11 +355,13 @@ export function ClusteredPhotoGrid({
       >
         {rowVirtualizer.getVirtualItems().map((virtualRow) => {
           const row = rows[virtualRow.index];
+          const animationDelay = getAnimationDelay(virtualRow.index);
 
           if (row.type === "header") {
             return (
               <div
                 key={virtualRow.key}
+                className="animate-cluster-fade-in"
                 style={{
                   position: "absolute",
                   top: 0,
@@ -331,9 +369,10 @@ export function ClusteredPhotoGrid({
                   width: "100%",
                   height: `${virtualRow.size}px`,
                   transform: `translateY(${virtualRow.start}px)`,
+                  animationDelay: `${animationDelay}ms`,
                 }}
               >
-                <ClusterHeader cluster={row.cluster} />
+                <ClusterHeader cluster={row.cluster} isAnimating={enableTransitions} />
               </div>
             );
           }
@@ -341,6 +380,7 @@ export function ClusteredPhotoGrid({
           return (
             <div
               key={virtualRow.key}
+              className="animate-cluster-fade-in"
               style={{
                 position: "absolute",
                 top: 0,
@@ -348,6 +388,7 @@ export function ClusteredPhotoGrid({
                 width: "100%",
                 height: `${virtualRow.size}px`,
                 transform: `translateY(${virtualRow.start}px)`,
+                animationDelay: `${animationDelay}ms`,
               }}
             >
               <div
@@ -361,10 +402,12 @@ export function ClusteredPhotoGrid({
                   const photoIndexInCluster = row.rowInCluster * columns + cellIndex;
                   const globalIndex = getGlobalPhotoIndex(row.clusterIndex, photoIndexInCluster);
                   return (
-                    <PhotoGridItem
+                    <AnimatedPhotoGridItem
                       key={photo.id}
                       photo={photo}
                       onClick={() => onPhotoClick?.(photo, globalIndex)}
+                      animationDelay={animationDelay + cellIndex * 20}
+                      enableAnimation={enableTransitions}
                     />
                   );
                 })}
@@ -383,11 +426,16 @@ export function ClusteredPhotoGrid({
 
 interface ClusterHeaderProps {
   cluster: PhotoCluster;
+  isAnimating?: boolean;
 }
 
-function ClusterHeader({ cluster }: ClusterHeaderProps) {
+function ClusterHeader({ cluster, isAnimating }: ClusterHeaderProps) {
   return (
-    <div className="sticky top-0 z-10 flex h-14 items-center bg-white/90 px-4 backdrop-blur-sm dark:bg-black/90">
+    <div
+      className={`sticky top-0 z-10 flex h-14 items-center bg-white/90 px-4 backdrop-blur-sm dark:bg-black/90 ${
+        isAnimating ? "animate-header-slide-in" : ""
+      }`}
+    >
       <div>
         <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
           {cluster.label}
@@ -400,5 +448,51 @@ function ClusterHeader({ cluster }: ClusterHeaderProps) {
         {cluster.photos.length} photo{cluster.photos.length !== 1 ? "s" : ""}
       </span>
     </div>
+  );
+}
+
+/**
+ * Animated photo grid item with staggered entrance animation
+ */
+interface AnimatedPhotoGridItemProps {
+  photo: Photo;
+  onClick?: () => void;
+  animationDelay?: number;
+  enableAnimation?: boolean;
+}
+
+function AnimatedPhotoGridItem({
+  photo,
+  onClick,
+  animationDelay = 0,
+  enableAnimation = true,
+}: AnimatedPhotoGridItemProps) {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const hasBlur = Boolean(photo.blurDataURL);
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`relative aspect-square overflow-hidden bg-gray-100 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 dark:bg-gray-900 dark:focus:ring-white ${
+        enableAnimation ? "animate-photo-scale-in" : ""
+      }`}
+      style={enableAnimation ? { animationDelay: `${animationDelay}ms` } : undefined}
+      aria-label={photo.alt || "View photo"}
+    >
+      {!isLoaded && !hasBlur && <PhotoSkeleton />}
+      <Image
+        src={photo.thumbnailUrl}
+        alt={photo.alt ?? "Photo"}
+        fill
+        sizes={`(max-width: 768px) ${100 / 3}vw, ${100 / 4}vw`}
+        className={`object-cover transition-opacity duration-300 ${
+          isLoaded ? "opacity-100" : hasBlur ? "opacity-100" : "opacity-0"
+        }`}
+        placeholder={hasBlur ? "blur" : "empty"}
+        blurDataURL={photo.blurDataURL}
+        onLoad={() => setIsLoaded(true)}
+      />
+    </button>
   );
 }
