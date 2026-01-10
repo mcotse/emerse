@@ -2,16 +2,28 @@
 
 import { signOut, useSession } from "next-auth/react";
 import { ReactNode, useState } from "react";
+import type { ClusterMode } from "@/app/page";
 
 interface AppShellProps {
   children: ReactNode;
   onUploadClick?: () => void;
+  clusterMode?: ClusterMode;
+  onClusterModeChange?: (mode: ClusterMode) => void;
 }
 
-export function AppShell({ children, onUploadClick }: AppShellProps) {
+export function AppShell({
+  children,
+  onUploadClick,
+  clusterMode,
+  onClusterModeChange,
+}: AppShellProps) {
   return (
     <div className="flex min-h-screen flex-col bg-white dark:bg-black">
-      <Header onUploadClick={onUploadClick} />
+      <Header
+        onUploadClick={onUploadClick}
+        clusterMode={clusterMode}
+        onClusterModeChange={onClusterModeChange}
+      />
       <main className="flex-1">{children}</main>
     </div>
   );
@@ -19,9 +31,11 @@ export function AppShell({ children, onUploadClick }: AppShellProps) {
 
 interface HeaderProps {
   onUploadClick?: () => void;
+  clusterMode?: ClusterMode;
+  onClusterModeChange?: (mode: ClusterMode) => void;
 }
 
-function Header({ onUploadClick }: HeaderProps) {
+function Header({ onUploadClick, clusterMode, onClusterModeChange }: HeaderProps) {
   const { data: session } = useSession();
   const [showMenu, setShowMenu] = useState(false);
 
@@ -30,6 +44,33 @@ function Header({ onUploadClick }: HeaderProps) {
       <div className="flex h-14 items-center justify-between px-4">
         <h1 className="text-lg font-semibold">Emerse</h1>
         <nav className="flex items-center gap-2">
+          {/* Cluster mode switcher */}
+          {clusterMode && onClusterModeChange && (
+            <div className="flex rounded-lg bg-gray-100 p-0.5 dark:bg-gray-800">
+              <button
+                type="button"
+                onClick={() => onClusterModeChange("month")}
+                className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
+                  clusterMode === "month"
+                    ? "bg-white text-black shadow-sm dark:bg-gray-700 dark:text-white"
+                    : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                }`}
+              >
+                Month
+              </button>
+              <button
+                type="button"
+                onClick={() => onClusterModeChange("day")}
+                className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
+                  clusterMode === "day"
+                    ? "bg-white text-black shadow-sm dark:bg-gray-700 dark:text-white"
+                    : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                }`}
+              >
+                Day
+              </button>
+            </div>
+          )}
           <button
             type="button"
             onClick={onUploadClick}

@@ -6,7 +6,13 @@ import { ClusteredPhotoGrid } from "@/components/PhotoGrid";
 import { PhotoViewer } from "@/components/PhotoViewer";
 import { UploadModal } from "@/components/UploadModal";
 import { usePinchZoom, zoomToColumns } from "@/hooks/usePinchZoom";
-import { generateMockPhotosWithDates, clusterByMonth } from "@/lib/clustering";
+import {
+  generateMockPhotosWithDates,
+  clusterByMonth,
+  clusterByDay,
+} from "@/lib/clustering";
+
+export type ClusterMode = "month" | "day";
 
 // Mock photos with dates for development - will be replaced with real data
 // Using 500 photos distributed across the last year to test clustering
@@ -20,6 +26,7 @@ export default function Home() {
     index: number;
   }>({ isOpen: false, index: 0 });
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [clusterMode, setClusterMode] = useState<ClusterMode>("month");
 
   const { zoom, containerRef, isPinching } = usePinchZoom({
     minZoom: 0.5,
@@ -33,8 +40,10 @@ export default function Home() {
   const photos = MOCK_PHOTOS;
   const hasPhotos = photos.length > 0;
 
-  // Cluster photos by month
-  const clusters = useMemo(() => clusterByMonth(photos), [photos]);
+  // Cluster photos based on selected mode
+  const clusters = useMemo(() => {
+    return clusterMode === "month" ? clusterByMonth(photos) : clusterByDay(photos);
+  }, [photos, clusterMode]);
 
   // Flatten clusters for photo viewer navigation
   const allPhotos = useMemo(
@@ -51,7 +60,11 @@ export default function Home() {
   }
 
   return (
-    <AppShell onUploadClick={() => setIsUploadOpen(true)}>
+    <AppShell
+      onUploadClick={() => setIsUploadOpen(true)}
+      clusterMode={clusterMode}
+      onClusterModeChange={setClusterMode}
+    >
       <div ref={containerRef} className="min-h-full">
         {hasPhotos ? (
           <>
