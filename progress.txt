@@ -121,3 +121,40 @@
 1. Task 1.5: Authentication setup
 2. Task 3.1: Basic photo grid component
 3. Task 2.2: Image upload API endpoint
+
+---
+
+## 2026-01-10: Task 1.5 - Authentication Setup
+
+**Status:** Complete
+
+### What was done:
+- Installed NextAuth.js v5 (beta) for authentication
+- Created auth configuration with credentials provider
+- Added protected route middleware (all routes require auth by default)
+- Created login page with email/password form
+- Added SessionProvider for client-side session access
+- Updated AppShell header with user menu and sign out
+- Created .env.example for environment variable documentation
+
+### Auth Features:
+- Private by default - all routes protected except /login and /share/*
+- Demo credentials for development (demo@emerse.app / demo)
+- Session management via NextAuth
+- User menu with profile info and sign out
+
+### Files created/modified:
+- src/lib/auth.ts - NextAuth configuration
+- src/app/api/auth/[...nextauth]/route.ts - Auth API handler
+- src/middleware.ts - Route protection middleware
+- src/app/login/page.tsx - Login page
+- src/app/login/LoginForm.tsx - Login form component
+- src/components/SessionProvider.tsx - Client session provider
+- src/components/AppShell.tsx - Added user menu with sign out
+- src/app/layout.tsx - Added SessionProvider wrapper
+- .env.example - Environment variable template
+
+### Next priorities:
+1. Task 3.1: Basic photo grid component
+2. Task 2.2: Image upload API endpoint
+3. Task 2.3: Client-side image compression
