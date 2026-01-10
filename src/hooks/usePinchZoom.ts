@@ -5,12 +5,15 @@ interface PinchZoomOptions {
   maxZoom?: number;
   initialZoom?: number;
   zoomSensitivity?: number;
+  enableMomentum?: boolean;
+  friction?: number;
 }
 
 interface PinchZoomResult {
   zoom: number;
   containerRef: React.RefObject<HTMLDivElement | null>;
   isPinching: boolean;
+  zoomVelocity: number;
 }
 
 export function usePinchZoom({
@@ -18,12 +21,19 @@ export function usePinchZoom({
   maxZoom = 2,
   initialZoom = 1,
   zoomSensitivity = 0.01,
+  enableMomentum = true,
+  friction = 0.92,
 }: PinchZoomOptions = {}): PinchZoomResult {
   const [zoom, setZoom] = useState(initialZoom);
   const [isPinching, setIsPinching] = useState(false);
+  const [zoomVelocity, setZoomVelocity] = useState(0);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const initialDistanceRef = useRef<number | null>(null);
   const initialZoomRef = useRef<number>(initialZoom);
+  const lastZoomRef = useRef<number>(initialZoom);
+  const lastTimeRef = useRef<number>(0);
+  const velocityRef = useRef<number>(0);
+  const animationRef = useRef<number | null>(null);
 
   const getDistance = useCallback((touches: TouchList): number => {
     if (touches.length < 2) return 0;
@@ -31,6 +41,25 @@ export function usePinchZoom({
     const dy = touches[0].clientY - touches[1].clientY;
     return Math.sqrt(dx * dx + dy * dy);
   }, []);
+
+  // Momentum animation
+  const animateMomentum = useCallback(() => {
+    if (Math.abs(velocityRef.current) < 0.001) {
+      setZoomVelocity(0);
+      animationRef.current = null;
+      return;
+    }
+
+    velocityRef.current *= friction;
+    setZoomVelocity(velocityRef.current);
+
+    setZoom((prev) => {
+      const newZoom = prev + velocityRef.current;
+      return Math.min(maxZoom, Math.max(minZoom, newZoom));
+    });
+
+    animationRef.current = requestAnimationFrame(animateMomentum);
+  }, [friction, maxZoom, minZoom]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -42,6 +71,15 @@ export function usePinchZoom({
         setIsPinching(true);
         initialDistanceRef.current = getDistance(e.touches);
         initialZoomRef.current = zoom;
+        lastZoomRef.current = zoom;
+        lastTimeRef.current = performance.now();
+        velocityRef.current = 0;
+
+        // Cancel any ongoing momentum animation
+        if (animationRef.current !== null) {
+          cancelAnimationFrame(animationRef.current);
+          animationRef.current = null;
+        }
       }
     }
 
@@ -50,9 +88,18 @@ export function usePinchZoom({
         e.preventDefault();
         const currentDistance = getDistance(e.touches);
         const scale = currentDistance / initialDistanceRef.current;
-        const newZoom = initialZoomRef.current * scale;
+        const newZoom = Math.min(maxZoom, Math.max(minZoom, initialZoomRef.current * scale));
 
-        setZoom(Math.min(maxZoom, Math.max(minZoom, newZoom)));
+        // Calculate velocity
+        const now = performance.now();
+        const dt = now - lastTimeRef.current;
+        if (dt > 0) {
+          velocityRef.current = (newZoom - lastZoomRef.current) / dt * 16; // Normalize to ~60fps
+        }
+        lastZoomRef.current = newZoom;
+        lastTimeRef.current = now;
+
+        setZoom(newZoom);
       }
     }
 
@@ -60,15 +107,32 @@ export function usePinchZoom({
       if (e.touches.length < 2) {
         setIsPinching(false);
         initialDistanceRef.current = null;
+
+        // Start momentum animation if enabled and velocity is significant
+        if (enableMomentum && Math.abs(velocityRef.current) > 0.005) {
+          animationRef.current = requestAnimationFrame(animateMomentum);
+        }
       }
     }
 
-    // Also support wheel zoom for desktop
+    // Also support wheel zoom for desktop with momentum
     function handleWheel(e: WheelEvent) {
       if (e.ctrlKey || e.metaKey) {
         e.preventDefault();
         const delta = -e.deltaY * zoomSensitivity;
+
+        // Cancel any ongoing animation and add to velocity
+        if (animationRef.current !== null) {
+          cancelAnimationFrame(animationRef.current);
+        }
+
+        velocityRef.current = delta * 0.5;
         setZoom((prev) => Math.min(maxZoom, Math.max(minZoom, prev + delta)));
+
+        // Start momentum
+        if (enableMomentum) {
+          animationRef.current = requestAnimationFrame(animateMomentum);
+        }
       }
     }
 
@@ -84,10 +148,14 @@ export function usePinchZoom({
       container.removeEventListener("touchmove", handleTouchMove);
       container.removeEventListener("touchend", handleTouchEnd);
       container.removeEventListener("wheel", handleWheel);
-    };
-  }, [getDistance, maxZoom, minZoom, zoom, zoomSensitivity]);
 
-  return { zoom, containerRef, isPinching };
+      if (animationRef.current !== null) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [animateMomentum, enableMomentum, getDistance, maxZoom, minZoom, zoom, zoomSensitivity]);
+
+  return { zoom, containerRef, isPinching, zoomVelocity };
 }
 
 // Helper to convert zoom level to column count
