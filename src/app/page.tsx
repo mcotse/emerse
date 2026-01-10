@@ -4,6 +4,7 @@ import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { PhotoGrid, Photo } from "@/components/PhotoGrid";
 import { PhotoViewer } from "@/components/PhotoViewer";
+import { usePinchZoom, zoomToColumns } from "@/hooks/usePinchZoom";
 
 // Mock photos for development - will be replaced with real data
 const MOCK_PHOTOS: Photo[] = Array.from({ length: 24 }).map((_, i) => ({
@@ -14,11 +15,21 @@ const MOCK_PHOTOS: Photo[] = Array.from({ length: 24 }).map((_, i) => ({
   alt: `Photo ${i + 1}`,
 }));
 
+const COLUMN_OPTIONS = [2, 3, 4, 6, 8];
+
 export default function Home() {
   const [viewerState, setViewerState] = useState<{
     isOpen: boolean;
     index: number;
   }>({ isOpen: false, index: 0 });
+
+  const { zoom, containerRef, isPinching } = usePinchZoom({
+    minZoom: 0.5,
+    maxZoom: 2,
+    initialZoom: 1,
+  });
+
+  const columns = zoomToColumns(zoom, COLUMN_OPTIONS);
 
   // TODO: Replace with real photo data from database
   const photos = MOCK_PHOTOS;
@@ -34,17 +45,26 @@ export default function Home() {
 
   return (
     <AppShell>
-      {hasPhotos ? (
-        <PhotoGrid
-          photos={photos}
-          columns={3}
-          onPhotoClick={(_, index) => openViewer(index)}
-        />
-      ) : (
-        <div className="p-4">
-          <EmptyState />
-        </div>
-      )}
+      <div ref={containerRef} className="min-h-full">
+        {hasPhotos ? (
+          <>
+            <PhotoGrid
+              photos={photos}
+              columns={columns}
+              onPhotoClick={(_, index) => openViewer(index)}
+            />
+            {isPinching && (
+              <div className="pointer-events-none fixed bottom-20 left-1/2 -translate-x-1/2 rounded-full bg-black/70 px-4 py-2 text-sm font-medium text-white">
+                {columns} columns
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="p-4">
+            <EmptyState />
+          </div>
+        )}
+      </div>
 
       {viewerState.isOpen && (
         <PhotoViewer
