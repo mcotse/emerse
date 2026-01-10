@@ -4,6 +4,8 @@ import { signOut, useSession } from "next-auth/react";
 import { ReactNode, useState } from "react";
 import type { ClusterMode } from "@/app/page";
 import { useDarkMode } from "@/hooks/useDarkMode";
+import type { PhotoWithDate, Tag } from "@/lib/clustering";
+import { SearchBar } from "./SearchBar";
 
 interface AppShellProps {
   children: ReactNode;
@@ -11,6 +13,9 @@ interface AppShellProps {
   onTagsClick?: () => void;
   clusterMode?: ClusterMode;
   onClusterModeChange?: (mode: ClusterMode) => void;
+  photos?: PhotoWithDate[];
+  tags?: Tag[];
+  onSearch?: (query: string) => void;
 }
 
 export function AppShell({
@@ -19,6 +24,9 @@ export function AppShell({
   onTagsClick,
   clusterMode,
   onClusterModeChange,
+  photos,
+  tags,
+  onSearch,
 }: AppShellProps) {
   return (
     <div className="flex min-h-screen flex-col bg-white dark:bg-black">
@@ -27,6 +35,9 @@ export function AppShell({
         onTagsClick={onTagsClick}
         clusterMode={clusterMode}
         onClusterModeChange={onClusterModeChange}
+        photos={photos}
+        tags={tags}
+        onSearch={onSearch}
       />
       <main className="flex-1">{children}</main>
     </div>
@@ -38,18 +49,29 @@ interface HeaderProps {
   onTagsClick?: () => void;
   clusterMode?: ClusterMode;
   onClusterModeChange?: (mode: ClusterMode) => void;
+  photos?: PhotoWithDate[];
+  tags?: Tag[];
+  onSearch?: (query: string) => void;
 }
 
-function Header({ onUploadClick, onTagsClick, clusterMode, onClusterModeChange }: HeaderProps) {
+function Header({ onUploadClick, onTagsClick, clusterMode, onClusterModeChange, photos, tags, onSearch }: HeaderProps) {
   const { data: session } = useSession();
   const [showMenu, setShowMenu] = useState(false);
   const { effectiveTheme, toggleTheme, mounted } = useDarkMode();
 
   return (
     <header className="sticky top-0 z-50 border-b border-gray-200 bg-white/80 backdrop-blur-sm dark:border-gray-800 dark:bg-black/80">
-      <div className="flex h-14 items-center justify-between px-4">
+      <div className="flex h-14 items-center gap-4 px-4">
         <h1 className="text-lg font-semibold">Emerse</h1>
-        <nav className="flex items-center gap-2">
+        {photos && tags && onSearch && (
+          <SearchBar
+            photos={photos}
+            tags={tags}
+            onSearch={onSearch}
+            className="hidden flex-1 sm:block sm:max-w-xs"
+          />
+        )}
+        <nav className="ml-auto flex items-center gap-2">
           {/* Cluster mode switcher */}
           {clusterMode && onClusterModeChange && (
             <div className="flex rounded-lg bg-gray-100 p-0.5 dark:bg-gray-800">

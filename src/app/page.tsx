@@ -14,6 +14,7 @@ import {
   SAMPLE_TAGS,
 } from "@/lib/clustering";
 import { TagManager } from "@/components/TagManager";
+import { searchPhotos, type SearchResult } from "@/lib/search";
 
 export type ClusterMode = "month" | "day";
 
@@ -33,6 +34,8 @@ export default function Home() {
   const [clusterMode, setClusterMode] = useState<ClusterMode>("month");
   const [photos, setPhotos] = useState<PhotoWithDate[]>(INITIAL_PHOTOS);
   const [availableTags, setAvailableTags] = useState<Tag[]>(SAMPLE_TAGS);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<SearchResult[] | null>(null);
 
   const { zoom, containerRef, isPinching } = usePinchZoom({
     minZoom: 0.5,
@@ -86,6 +89,20 @@ export default function Home() {
     [availableTags]
   );
 
+  // Handle search
+  const handleSearch = useCallback(
+    (query: string) => {
+      setSearchQuery(query);
+      if (query.trim()) {
+        const results = searchPhotos(photos, query);
+        setSearchResults(results);
+      } else {
+        setSearchResults(null);
+      }
+    },
+    [photos]
+  );
+
   // Cluster photos based on selected mode
   const clusters = useMemo(() => {
     return clusterMode === "month" ? clusterByMonth(photos) : clusterByDay(photos);
@@ -111,8 +128,28 @@ export default function Home() {
       onTagsClick={() => setIsTagManagerOpen(true)}
       clusterMode={clusterMode}
       onClusterModeChange={setClusterMode}
+      photos={photos}
+      tags={availableTags}
+      onSearch={handleSearch}
     >
       <div ref={containerRef} className="min-h-full">
+        {/* Search results indicator */}
+        {searchQuery && searchResults && (
+          <div className="border-b border-gray-200 bg-gray-50 px-4 py-2 dark:border-gray-800 dark:bg-gray-900">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                {searchResults.length} result{searchResults.length !== 1 ? "s" : ""} for &quot;{searchQuery}&quot;
+              </span>
+              <button
+                type="button"
+                onClick={() => handleSearch("")}
+                className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400"
+              >
+                Clear search
+              </button>
+            </div>
+          </div>
+        )}
         {hasPhotos ? (
           <>
             <ClusteredPhotoGrid

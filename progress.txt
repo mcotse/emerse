@@ -645,6 +645,34 @@
 
 ---
 
+## 2026-01-10: Task 3.10 - Keyword Search
+
+**Status:** Complete
+
+### What was done:
+- Created search utility with multi-field search across tags and metadata
+- Built SearchBar component with autocomplete suggestions
+- Added search bar to header (hidden on mobile, visible on tablet+)
+- Search across: tags, camera, lens, location, date, aperture, ISO, focal length
+- Scoring system for relevance ranking
+- Search results indicator with count and clear button
+
+### Search Features:
+- Multi-term search (space-separated keywords)
+- Real-time search suggestions based on tags and metadata
+- Keyboard navigation (arrows, Enter, Escape)
+- Clear search button
+- Results sorted by relevance score
+- Search bar with suggestions dropdown
+
+### Files created/modified:
+- src/lib/search.ts - Search utilities (searchPhotos, getSearchSuggestions)
+- src/components/SearchBar.tsx - Search input with autocomplete
+- src/components/AppShell.tsx - Added search bar to header
+- src/app/page.tsx - Added search state and handler
+
+---
+
 ### Remaining Work
 - [ ] 2.4 Server-side multi-resolution generation
 - [ ] 3.5 Location-based clustering
