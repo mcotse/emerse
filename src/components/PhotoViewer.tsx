@@ -30,6 +30,11 @@ export function PhotoViewer({
   const [lastTap, setLastTap] = useState<number>(0);
   const [pinchStart, setPinchStart] = useState<{ distance: number; scale: number } | null>(null);
   const [showInfo, setShowInfo] = useState(false);
+  const [shareState, setShareState] = useState<{
+    isSharing: boolean;
+    shareUrl?: string;
+    error?: string;
+  }>({ isSharing: false });
   const imageRef = useRef<HTMLDivElement>(null);
 
   const currentPhoto = photos[currentIndex];
@@ -59,6 +64,34 @@ export function PhotoViewer({
     const dx = touches[0].clientX - touches[1].clientX;
     const dy = touches[0].clientY - touches[1].clientY;
     return Math.sqrt(dx * dx + dy * dy);
+  };
+
+  // Share current photo
+  const handleShare = async () => {
+    setShareState({ isSharing: true });
+
+    try {
+      const response = await fetch("/api/share", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          photoIds: [currentPhoto.id],
+          expiresInDays: 30,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create share link");
+      }
+
+      const { shareUrl } = await response.json();
+      setShareState({ isSharing: false, shareUrl });
+
+      // Copy to clipboard
+      await navigator.clipboard.writeText(shareUrl);
+    } catch {
+      setShareState({ isSharing: false, error: "Failed to create share link" });
+    }
   };
 
   // Keyboard navigation
@@ -185,6 +218,15 @@ export function PhotoViewer({
       <div className="absolute right-4 top-4 z-10 flex gap-2">
         <button
           type="button"
+          onClick={handleShare}
+          disabled={shareState.isSharing}
+          className="rounded-full bg-black/50 p-2 text-white hover:bg-black/70 disabled:opacity-50"
+          aria-label="Share photo"
+        >
+          <ShareIcon className="h-6 w-6" />
+        </button>
+        <button
+          type="button"
           onClick={() => setShowInfo(!showInfo)}
           className={`rounded-full p-2 text-white transition-colors ${
             showInfo ? "bg-white/30" : "bg-black/50 hover:bg-black/70"
@@ -202,6 +244,32 @@ export function PhotoViewer({
           <CloseIcon className="h-6 w-6" />
         </button>
       </div>
+
+      {/* Share confirmation toast */}
+      {shareState.shareUrl && (
+        <div className="absolute left-1/2 top-16 z-20 -translate-x-1/2 rounded-lg bg-green-600 px-4 py-2 text-sm text-white shadow-lg">
+          Link copied to clipboard!
+          <button
+            type="button"
+            onClick={() => setShareState({ isSharing: false })}
+            className="ml-2 text-white/80 hover:text-white"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+      {shareState.error && (
+        <div className="absolute left-1/2 top-16 z-20 -translate-x-1/2 rounded-lg bg-red-600 px-4 py-2 text-sm text-white shadow-lg">
+          {shareState.error}
+          <button
+            type="button"
+            onClick={() => setShareState({ isSharing: false })}
+            className="ml-2 text-white/80 hover:text-white"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* Navigation buttons - hide when zoomed */}
       {hasPrev && !isZoomed && (
@@ -335,6 +403,25 @@ function InfoIcon({ className }: { className?: string }) {
         strokeLinecap="round"
         strokeLinejoin="round"
         d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
+      />
+    </svg>
+  );
+}
+
+function ShareIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={2}
+      stroke="currentColor"
+      className={className}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z"
       />
     </svg>
   );
