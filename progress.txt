@@ -252,3 +252,38 @@
 1. Task 2.2: Image upload API endpoint
 2. Task 3.2: Virtualized scrolling for performance
 3. Task 2.3: Client-side image compression
+
+---
+
+## 2026-01-10: Task 2.2 - Image Upload API Endpoint
+
+**Status:** Complete
+
+### What was done:
+- Installed AWS S3 SDK (@aws-sdk/client-s3, @aws-sdk/s3-request-presigner)
+- Created S3 client configuration with presigned URL generation
+- Built upload API route with authentication and validation
+- Added user ID to session for ownership tracking
+- Updated .env.example with S3 environment variables
+- Documented S3 setup in MANUAL_SETUP.md
+
+### Upload API Features:
+- POST /api/upload endpoint
+- Requires authentication
+- Validates file type (JPEG, PNG, WebP, HEIC/HEIF)
+- Validates file size (max 50MB)
+- Returns presigned URL for direct S3 upload
+- Organizes uploads by user ID and timestamp
+
+### Files created/modified:
+- src/lib/s3.ts - S3 client and presigned URL generation
+- src/app/api/upload/route.ts - Upload API endpoint
+- src/lib/auth.ts - Added user ID to session
+- src/types/next-auth.d.ts - Session type extension
+- .env.example - Added S3 environment variables
+- MANUAL_SETUP.md - S3 setup instructions
+
+### Next priorities:
+1. Task 2.5: Upload progress UI with preview
+2. Task 2.3: Client-side image compression
+3. Task 3.2: Virtualized scrolling for performance

@@ -16,7 +16,60 @@ This file contains all manual setup tasks that require human input. Complete the
 
 ## 1. AWS S3 Setup
 
-*To be documented when implementing Phase 2 (Storage & Upload)*
+### Create S3 Bucket
+
+1. Go to AWS S3 Console
+2. Create a new bucket (e.g., `emerse-photos-yourname`)
+3. Region: Choose closest to your users
+4. Block all public access (we use presigned URLs)
+5. Enable versioning (optional but recommended)
+
+### Configure CORS
+
+Add this CORS configuration to allow browser uploads:
+
+```json
+[
+  {
+    "AllowedHeaders": ["*"],
+    "AllowedMethods": ["GET", "PUT", "POST"],
+    "AllowedOrigins": ["http://localhost:3000", "https://yourdomain.com"],
+    "ExposeHeaders": ["ETag"]
+  }
+]
+```
+
+### Create IAM User
+
+1. Go to IAM Console
+2. Create a new user (e.g., `emerse-app`)
+3. Attach policy with these permissions:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:PutObject",
+        "s3:GetObject",
+        "s3:DeleteObject"
+      ],
+      "Resource": "arn:aws:s3:::emerse-photos-yourname/*"
+    }
+  ]
+}
+```
+
+4. Create access keys and add to `.env`:
+
+```
+AWS_REGION=us-east-1
+AWS_ACCESS_KEY_ID=your-access-key
+AWS_SECRET_ACCESS_KEY=your-secret-key
+S3_BUCKET_NAME=emerse-photos-yourname
+```
 
 ---
 
