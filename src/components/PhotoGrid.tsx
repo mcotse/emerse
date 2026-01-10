@@ -60,7 +60,7 @@ function PhotoGridItem({ photo, onClick }: PhotoGridItemProps) {
     <button
       type="button"
       onClick={onClick}
-      className="relative aspect-square overflow-hidden bg-gray-100 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 dark:bg-gray-900 dark:focus:ring-white"
+      className="relative aspect-square overflow-hidden bg-gray-100 transition-all duration-300 ease-out focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 dark:bg-gray-900 dark:focus:ring-white"
     >
       {!isLoaded && !hasBlur && <PhotoSkeleton />}
       <Image
