@@ -148,6 +148,31 @@ export function clusterByDay(photos: PhotoWithDate[]): PhotoCluster[] {
   });
 }
 
+/**
+ * Generate a simple blur placeholder data URL.
+ * Uses a small SVG with a gradient to simulate a blurred image.
+ */
+function generateBlurPlaceholder(seed: number): string {
+  // Generate pseudo-random colors based on seed
+  const hue1 = (seed * 137) % 360;
+  const hue2 = (seed * 73 + 180) % 360;
+
+  // Create a simple SVG gradient that simulates a blurred photo
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 8">
+      <defs>
+        <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:hsl(${hue1},40%,60%)" />
+          <stop offset="100%" style="stop-color:hsl(${hue2},40%,50%)" />
+        </linearGradient>
+      </defs>
+      <rect fill="url(#g)" width="8" height="8"/>
+    </svg>
+  `.trim().replace(/\s+/g, " ");
+
+  return `data:image/svg+xml;base64,${btoa(svg)}`;
+}
+
 // Mock camera/lens data for generating realistic metadata
 const CAMERAS = [
   "Canon EOS R5",
@@ -190,6 +215,7 @@ export function generateMockPhotosWithDates(count: number): PhotoWithDate[] {
       width: 3000 + Math.floor(Math.random() * 3000),
       height: 2000 + Math.floor(Math.random() * 2000),
       alt: `Photo ${i + 1}`,
+      blurDataURL: generateBlurPlaceholder(i),
       takenAt,
       ...(hasMetadata && {
         camera: CAMERAS[Math.floor(Math.random() * CAMERAS.length)],

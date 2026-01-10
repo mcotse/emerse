@@ -11,6 +11,7 @@ export interface Photo {
   width: number;
   height: number;
   alt?: string;
+  blurDataURL?: string;
 }
 
 interface PhotoGridProps {
@@ -53,6 +54,7 @@ interface PhotoGridItemProps {
 
 function PhotoGridItem({ photo, onClick }: PhotoGridItemProps) {
   const [isLoaded, setIsLoaded] = useState(false);
+  const hasBlur = Boolean(photo.blurDataURL);
 
   return (
     <button
@@ -60,15 +62,17 @@ function PhotoGridItem({ photo, onClick }: PhotoGridItemProps) {
       onClick={onClick}
       className="relative aspect-square overflow-hidden bg-gray-100 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 dark:bg-gray-900 dark:focus:ring-white"
     >
-      {!isLoaded && <PhotoSkeleton />}
+      {!isLoaded && !hasBlur && <PhotoSkeleton />}
       <Image
         src={photo.thumbnailUrl}
         alt={photo.alt ?? "Photo"}
         fill
         sizes={`(max-width: 768px) ${100 / 3}vw, ${100 / 4}vw`}
-        className={`object-cover transition-opacity duration-200 ${
-          isLoaded ? "opacity-100" : "opacity-0"
+        className={`object-cover transition-opacity duration-300 ${
+          isLoaded ? "opacity-100" : hasBlur ? "opacity-100" : "opacity-0"
         }`}
+        placeholder={hasBlur ? "blur" : "empty"}
+        blurDataURL={photo.blurDataURL}
         onLoad={() => setIsLoaded(true)}
       />
     </button>
