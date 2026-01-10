@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useRef, useState, useCallback } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 
 export interface Photo {
   id: string;
@@ -102,6 +103,108 @@ export function PhotoGridSkeleton({
           className="aspect-square animate-pulse bg-gray-200 dark:bg-gray-800"
         />
       ))}
+    </div>
+  );
+}
+
+/**
+ * Virtualized photo grid for handling large photo libraries (1K-10K+ photos).
+ * Only renders visible rows plus overscan for smooth scrolling.
+ */
+interface VirtualizedPhotoGridProps {
+  photos: Photo[];
+  columns?: number;
+  gap?: number;
+  onPhotoClick?: (photo: Photo, index: number) => void;
+}
+
+export function VirtualizedPhotoGrid({
+  photos,
+  columns = 3,
+  gap = 2,
+  onPhotoClick,
+}: VirtualizedPhotoGridProps) {
+  const parentRef = useRef<HTMLDivElement>(null);
+
+  // Calculate row count
+  const rowCount = Math.ceil(photos.length / columns);
+
+  // Calculate row height based on viewport width and columns
+  const getRowHeight = useCallback(() => {
+    if (typeof window === "undefined") return 120;
+    // Each cell is square, so height = width / columns
+    const containerWidth = parentRef.current?.clientWidth ?? window.innerWidth;
+    const cellWidth = (containerWidth - gap * (columns - 1)) / columns;
+    return cellWidth + gap;
+  }, [columns, gap]);
+
+  const rowVirtualizer = useVirtualizer({
+    count: rowCount,
+    getScrollElement: () => parentRef.current,
+    estimateSize: getRowHeight,
+    overscan: 5, // Render 5 extra rows above/below viewport
+  });
+
+  if (photos.length === 0) {
+    return null;
+  }
+
+  return (
+    <div
+      ref={parentRef}
+      className="h-[calc(100vh-3.5rem)] overflow-auto"
+      style={{ contain: "strict" }}
+    >
+      <div
+        style={{
+          height: `${rowVirtualizer.getTotalSize()}px`,
+          width: "100%",
+          position: "relative",
+        }}
+      >
+        {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+          const rowStartIndex = virtualRow.index * columns;
+          const rowPhotos = photos.slice(rowStartIndex, rowStartIndex + columns);
+
+          return (
+            <div
+              key={virtualRow.key}
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: `${virtualRow.size}px`,
+                transform: `translateY(${virtualRow.start}px)`,
+              }}
+            >
+              <div
+                className="grid h-full"
+                style={{
+                  gridTemplateColumns: `repeat(${columns}, 1fr)`,
+                  gap: `${gap}px`,
+                }}
+              >
+                {rowPhotos.map((photo, cellIndex) => {
+                  const globalIndex = rowStartIndex + cellIndex;
+                  return (
+                    <PhotoGridItem
+                      key={photo.id}
+                      photo={photo}
+                      onClick={() => onPhotoClick?.(photo, globalIndex)}
+                    />
+                  );
+                })}
+                {/* Fill empty cells in last row */}
+                {rowPhotos.length < columns &&
+                  Array.from({ length: columns - rowPhotos.length }).map(
+                    (_, i) => <div key={`empty-${i}`} className="aspect-square" />
+                  )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

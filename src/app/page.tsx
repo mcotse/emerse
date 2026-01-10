@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
-import { PhotoGrid, Photo } from "@/components/PhotoGrid";
+import { VirtualizedPhotoGrid, Photo } from "@/components/PhotoGrid";
 import { PhotoViewer } from "@/components/PhotoViewer";
 import { UploadModal } from "@/components/UploadModal";
 import { usePinchZoom, zoomToColumns } from "@/hooks/usePinchZoom";
 
 // Mock photos for development - will be replaced with real data
-const MOCK_PHOTOS: Photo[] = Array.from({ length: 24 }).map((_, i) => ({
+// Using 500 photos to test virtualization performance
+const MOCK_PHOTOS: Photo[] = Array.from({ length: 500 }).map((_, i) => ({
   id: `photo-${i}`,
   thumbnailUrl: `https://picsum.photos/seed/${i}/400/400`,
   width: 400,
@@ -50,7 +51,7 @@ export default function Home() {
       <div ref={containerRef} className="min-h-full">
         {hasPhotos ? (
           <>
-            <PhotoGrid
+            <VirtualizedPhotoGrid
               photos={photos}
               columns={columns}
               onPhotoClick={(_, index) => openViewer(index)}

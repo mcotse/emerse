@@ -343,7 +343,31 @@
 
 ---
 
-## Summary: 11 Iterations Completed
+## 2026-01-10: Task 3.2 - Virtualized Scrolling
+
+**Status:** Complete
+
+### What was done:
+- Installed @tanstack/react-virtual for efficient virtualization
+- Created VirtualizedPhotoGrid component with row-based virtualization
+- Only renders visible rows plus 5 overscan rows for smooth scrolling
+- Integrated with existing pinch-to-zoom functionality
+- Tested with 500 mock photos
+
+### Virtualization Features:
+- Row-based virtualization (renders rows, not individual cells)
+- Dynamic row height based on viewport width and column count
+- 5 row overscan for smooth scrolling
+- CSS containment for optimal paint performance
+- Handles variable column counts from pinch-to-zoom
+
+### Files created/modified:
+- src/components/PhotoGrid.tsx - Added VirtualizedPhotoGrid component
+- src/app/page.tsx - Switched to virtualized grid, increased mock data to 500
+
+---
+
+## Summary: 12 Iterations Completed
 
 ### Foundation (Phase 1)
 - [x] 1.1 Project setup (Next.js, TypeScript, Tailwind)
@@ -359,12 +383,12 @@
 
 ### Photo Grid & Navigation (Phase 3-5)
 - [x] 3.1 Basic photo grid component
+- [x] 3.2 Virtualized scrolling for performance
 - [x] 4.2 Pinch-to-zoom gesture detection
 - [x] 5.1 Full-screen photo viewer modal
 
 ### Remaining Work
 - [ ] 2.4 Server-side multi-resolution generation
-- [ ] 3.2 Virtualized scrolling
 - [ ] 3.3-3.6 Clustering features
 - [ ] 5.2-5.5 Photo viewer enhancements
 - [ ] Phase 6-7: Polish and public sharing
